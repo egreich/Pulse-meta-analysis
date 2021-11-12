@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 *.Rproj
+
+# Suppress folders
+data_raw/
