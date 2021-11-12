@@ -1,4 +1,5 @@
-### This script will input the combined pulse meta-analysis extractions and create figures that summarize the collection
+### This script will input the combined pulse meta-analysis extraction csv files
+### and create figures that summarize the collection
 
 setwd("~/Documents/Emma/NAU/Pulse_Meta") # set to your working directory
 
@@ -46,7 +47,7 @@ path_out = "~/Documents/Emma/NAU/Pulse_Meta/graphs/" # set save path
 
 ggsave2("p_veg.png", plot = p_veg, path = path_out)
 
-######
+### Count natural and experimental pulses
 
 length(dataIN_pulse$Pulse.ID) #682 (687 - blanks)
 
@@ -55,7 +56,7 @@ d_pulse_exp <- dataIN_pulse$Pulse.type[which(dataIN_pulse$Pulse.type == "Experim
 # 672 total, some were not filled out
 
 
-###### variables
+### Make variable count graph
 d_var_count <- dataIN_record %>%
   count(Variable)
 
@@ -99,7 +100,9 @@ ggsave2("p_var.png", plot = p_var, path = path_out)
 #plot(locations$long, locations$lat)
 
 
-### Combine variable names that are the same, drop variable names we don't need yet for the prelim analysis (see 11/3 /21 meeting notes)
+### Combine variable names that are the same, 
+### drop variable names we don't need yet for the prelim analysis 
+### (see 11/3 /21 meeting notes)
 
 # Drop rows with variables we don't care about right now
 d_record <-subset(dataIN_record, 
@@ -126,8 +129,9 @@ d_record <- d_record %>%
 d_record$newVariable <- ifelse(is.na(d_record$newVariable), d_record$Variable, d_record$newVariable )
 
 
-(var_names <- unique(d_record$newVariable))
+(var_names <- unique(d_record$newVariable)) # check the new variable names
 
+# Make a new variable count plot
 d_var_count <- d_record %>%
   count(newVariable)
 
