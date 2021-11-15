@@ -4,6 +4,7 @@
 .Ruserdata
 *.Rproj
 .DC_Store
+Pulse-meta-analysis.Rproj
 
 # Suppress folders
 data_raw/
