@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 *.Rproj
+.DC_Store
 
 # Suppress folders
 data_raw/
+plots/
