@@ -3,7 +3,7 @@
 .RData
 .Ruserdata
 *.Rproj
-.DC_Store
+.DS_Store
 Pulse-meta-analysis.Rproj
 
 # Suppress folders
