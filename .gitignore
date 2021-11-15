@@ -7,5 +7,6 @@
 Pulse-meta-analysis.Rproj
 
 # Suppress folders
+data_clean/
 data_raw/
 plots/

@@ -17,7 +17,11 @@ dataIN_record = read.csv("./data_raw/Combined_record_info.csv", header = TRUE, s
 
 
 # Make paper column for counting
-d_study <- dataIN_study %>% mutate(paper = substr(Study.ID,1L,3L)) # extract first character
+d_study <- dataIN_study %>% 
+  mutate(paper = substr(Study.ID, 1L, 3L), # extract first character
+         Vegetation.type = ifelse(Vegetation.type == "", 
+                                  NA, 
+                                  Vegetation.type)) # Categorize blanks as NA
 
 total_papers <- unique(d_study$paper)
 length(total_papers)
@@ -26,9 +30,6 @@ length(total_papers)
 
 d_veg_count <- d_study %>%
   count(Vegetation.type)
-d_veg_count <- d_veg_count[-1,]
-d_veg_count <- d_veg_count %>%
-  mutate()
 
 # The parentheses here just automatically call the plot
   # similar to just typing p_veg after
@@ -50,8 +51,8 @@ path_out = "./plots/" # set save path
 ggsave2("p_veg.png", plot = p_veg, path = path_out) # save veg type count plot
 
 ### Count natural and experimental pulses
-
-length(dataIN_pulse$Pulse.ID) #682 (687 - blanks)
+length(which(is.na(dataIN_pulse$Pulse.ID))) # 5 NAs
+length(which(!is.na(dataIN_pulse$Pulse.ID))) # 682 pulse IDs
 
 d_pulse_nat <- dataIN_pulse$Pulse.type[which(dataIN_pulse$Pulse.type == "Natural")] #168
 d_pulse_exp <- dataIN_pulse$Pulse.type[which(dataIN_pulse$Pulse.type == "Experimental/applied")] #504
@@ -145,5 +146,9 @@ d_var_count <- d_record %>%
 
 ggsave2("p_var_filtered.png", plot = p_var_filtered, path = path_out)
 
+# Save the filtered variables
+# Create folder for cleaned data if it does not already exist
+if(!file.exists("data_clean")) { dir.create("data_clean")} 
 
-
+write.csv(d_record, file = "data_clean/Clean_record_info.csv",
+          row.names = FALSE)
