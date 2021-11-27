@@ -52,11 +52,11 @@ ggsave2("p_veg.png", plot = p_veg, path = path_out) # save veg type count plot
 
 ### Count natural and experimental pulses
 length(which(is.na(dataIN_pulse$Pulse.ID))) # 5 NAs
-length(which(!is.na(dataIN_pulse$Pulse.ID))) # 682 pulse IDs
+length(which(!is.na(dataIN_pulse$Pulse.ID))) # 693 pulse IDs
 
-d_pulse_nat <- dataIN_pulse$Pulse.type[which(dataIN_pulse$Pulse.type == "Natural")] #168
+d_pulse_nat <- dataIN_pulse$Pulse.type[which(dataIN_pulse$Pulse.type == "Natural")] #161
 d_pulse_exp <- dataIN_pulse$Pulse.type[which(dataIN_pulse$Pulse.type == "Experimental/applied")] #504
-# 672 total, some were not filled out
+# 522 total, some were not filled out
 
 
 ### Make variable count graph
