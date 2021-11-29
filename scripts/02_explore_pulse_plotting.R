@@ -47,6 +47,20 @@ d_record3 %>%
   ggplot(aes(x = time.days, y = rescale_Mean)) +
   geom_vline(xintercept = 0, color = "red") +
   geom_point(alpha = 0.25) +
-  geom_line(aes(group = interaction(Study.ID, Pulse.ID))) +
+  facet_wrap(~newVariable, scales = "free") +
+  theme_bw()
+
+# Try standardizing rather than scaling by the max
+d_record4 <- d_record2 %>%
+  group_by(Study.ID, Pulse.ID, Variable) %>%
+  summarize(rescale_Mean = scale(Mean),
+            newVariable = unique(newVariable),
+            time.days = time.days)
+
+d_record4 %>%
+  filter(!is.na(newVariable)) %>%
+  ggplot(aes(x = time.days, y = rescale_Mean)) +
+  geom_vline(xintercept = 0, color = "red") +
+  geom_point(alpha = 0.25) +
   facet_wrap(~newVariable, scales = "free") +
   theme_bw()
