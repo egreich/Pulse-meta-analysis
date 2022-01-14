@@ -17,11 +17,25 @@ dataIN_record = read.csv("./data_raw/Combined_record_info.csv", header = TRUE, s
 
 
 # Make paper column for counting
-d_study <- dataIN_study %>% 
+d_study <- dataIN_study %>%
+  rename(MAP = MAP..mm.) %>%
   mutate(paper = substr(Study.ID, 1L, 3L), # extract first character
          Vegetation.type = ifelse(Vegetation.type == "", 
-                                  NA, 
-                                  Vegetation.type)) # Categorize blanks as NA
+                                  NA, # Categorize blanks as NA
+                                  Vegetation.type),
+         Study.ID = ifelse(Study.ID == "", 
+                           NA, # Categorize blanks as NA
+                           Study.ID),
+         Soil.texture = ifelse(Soil.texture == "", 
+                           NA, # Categorize blanks as NA
+                           Soil.texture),
+         Soil.texture = ifelse(Soil.texture == "sandy loams", 
+                               "sandy loam", # Combine identical variables
+                               Soil.texture),
+         Vegetation.type = ifelse(Vegetation.type == "annual grassland", 
+                               "grassland", # Combine identical variables
+                               Vegetation.type)) %>%
+  drop_na(Study.ID)# drop rows with Study.ID NAs (gets rid of extra rows) 
 
 total_papers <- unique(d_study$paper)
 length(total_papers)
@@ -49,6 +63,10 @@ if(!file.exists("plots")) { dir.create("plots")} # create plots folder if it doe
 path_out = "./plots/" # set save path
 
 ggsave2("p_veg.png", plot = p_veg, path = path_out) # save veg type count plot
+
+### Make a dataframe that saves study, soil texture, and veg type info for plotting
+d_study2 <- d_study %>%
+  select(Study.ID, Soil.texture, Vegetation.type, MAP)
 
 ### Count natural and experimental pulses
 length(which(is.na(dataIN_pulse$Pulse.ID))) # 5 NAs
@@ -146,9 +164,13 @@ d_var_count <- d_record %>%
 
 ggsave2("p_var_filtered.png", plot = p_var_filtered, path = path_out)
 
+### Attach soil texture and veg type info to d_record
+d_record <- full_join(d_record, d_study2, by = "Study.ID")
+
 # Save the filtered variables
 # Create folder for cleaned data if it does not already exist
 if(!file.exists("data_clean")) { dir.create("data_clean")} 
 
 write.csv(d_record, file = "data_clean/Clean_record_info.csv",
           row.names = FALSE)
+

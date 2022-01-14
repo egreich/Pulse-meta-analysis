@@ -32,7 +32,7 @@ d_record2 <- d_record %>%
 # Calculate the maximum size of the response 
 # excepting plant water potential and gpp which are negative
 d_pulse_max <- d_record %>%
-  group_by(Study.ID, Pulse.ID, Variable) %>%
+  group_by(Study.ID, Pulse.ID, Variable, Soil.texture, Vegetation.type, MAP) %>%
   summarize(max_val = max(Mean)) %>%
   filter(max_val > 0)
 
@@ -52,7 +52,7 @@ d_record3 %>%
 
 # Try standardizing rather than scaling by the max
 d_record4 <- d_record2 %>%
-  group_by(Study.ID, Pulse.ID, Variable) %>%
+  group_by(Study.ID, Pulse.ID, Variable, Soil.texture, Vegetation.type, MAP) %>%
   summarize(rescale_Mean = scale(Mean),
             newVariable = unique(newVariable),
             time.days = time.days)
@@ -64,3 +64,30 @@ d_record4 %>%
   geom_point(alpha = 0.25) +
   facet_wrap(~newVariable, scales = "free") +
   theme_bw()
+
+# Color by soil type
+imp_var <- c("stomatal conductance", "anet (photosynthesis)","T", "ecosystem R", "plant water potential", "wue") # narrow down variables
+
+d_record4 %>%
+  filter(newVariable %in% imp_var) %>%
+  ggplot(aes(x = time.days, y = rescale_Mean, color = Soil.texture)) +
+  geom_vline(xintercept = 0, color = "red") +
+  geom_point(alpha = 0.25) +
+  facet_wrap(~newVariable, scales = "free")
+
+# Color by veg type
+d_record4 %>%
+  filter(newVariable %in% imp_var) %>%
+  ggplot(aes(x = time.days, y = rescale_Mean, color = Vegetation.type)) +
+  geom_vline(xintercept = 0, color = "red") +
+  geom_point(alpha = 0.25) +
+  facet_wrap(~newVariable, scales = "free")
+
+# Color by avg precip
+d_record4 %>%
+  filter(newVariable %in% imp_var) %>%
+  ggplot(aes(x = time.days, y = rescale_Mean, color = MAP)) +
+  geom_vline(xintercept = 0, color = "red") +
+  geom_point(alpha = 0.25) +
+  facet_wrap(~newVariable, scales = "free")
+
