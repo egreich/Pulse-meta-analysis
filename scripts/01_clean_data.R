@@ -12,34 +12,39 @@ library(lubridate)
 
 # Import data
 dataIN_study = read.csv("./data_raw/Combined_study-source_info.csv", 
-                        header = TRUE, skip = 1)
+                        header = TRUE, skip = 1,
+                        na.strings = "")
 dataIN_pulse = read.csv("./data_raw/Combined_pulse-plot_info.csv", 
-                        header = TRUE, skip = 1)
+                        header = TRUE, skip = 1,
+                        na.strings = "")
 dataIN_record = read.csv("./data_raw/Combined_record_info.csv", 
                          header = TRUE, skip = 1,
                          na.strings = "")[,1:17] # Remove extraneous empty columns
 
 
-# Make paper column for counting
+# Clean study table
 d_study <- dataIN_study %>%
-  rename(MAP = MAP..mm.) %>%
-  mutate(paper = substr(Study.ID, 1L, 3L), # extract first character
-         Vegetation.type = ifelse(Vegetation.type == "", 
-                                  NA, # Categorize blanks as NA
-                                  Vegetation.type),
-         Study.ID = ifelse(Study.ID == "", 
-                           NA, # Categorize blanks as NA
-                           Study.ID),
-         Soil.texture = ifelse(Soil.texture == "", 
-                           NA, # Categorize blanks as NA
-                           Soil.texture),
+  rename(Elevation.m = Elevation..m.,
+         MAT.C = MAT..oC.,
+         MAP.mm = MAP..mm.,
+         percent.C4 = X.C4) %>%
+  mutate(Paper.ID = substr(Study.ID, 1L, 3L), # extract first character
          Soil.texture = ifelse(Soil.texture == "sandy loams", 
                                "sandy loam", # Combine identical variables
                                Soil.texture),
          Vegetation.type = ifelse(Vegetation.type == "annual grassland", 
                                "grassland", # Combine identical variables
-                               Vegetation.type)) %>%
-  drop_na(Study.ID)# drop rows with Study.ID NAs (gets rid of extra rows) 
+                               Vegetation.type),
+         Vegetation.type = ifelse(Vegetation.type == "riperian", 
+                                  "riparian", # Fix typo
+                                  Vegetation.type)) %>%
+  relocate(Paper.ID)
+
+# Clean pulse table
+# d_pulse1 has no pulse-level covariates (study level)
+# d_pulse2 has pulse-level covariates
+d_pulse2 <- dataIN_pulse %>%
+  filter()
 
 ### Combine variable names that are the same, 
 ### drop variable names we don't need yet for the prelim analysis 
