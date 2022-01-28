@@ -3,6 +3,7 @@
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(ggdist)
 
 # Read in record-level data
 d_record <- read_csv("data_clean/Clean_record_info.csv")
@@ -66,7 +67,7 @@ d_record4 %>%
   theme_bw()
 
 # Color by soil type
-imp_var <- c("stomatal conductance", "anet (photosynthesis)","T", "ecosystem R", "plant water potential", "wue") # narrow down variables
+imp_var <- c("stomatal conductance", "anet (photosynthesis)","T", "ecosystem R", "plant water potential", "wue", "soil water potential") # narrow down variables
 
 d_record4 %>%
   filter(newVariable %in% imp_var) %>%
@@ -90,4 +91,25 @@ d_record4 %>%
   geom_vline(xintercept = 0, color = "red") +
   geom_point(alpha = 0.25) +
   facet_wrap(~newVariable, scales = "free")
+
+# Raincloud plot of # study IDs per variable per time
+d_record4 %>%
+  filter(!is.na(newVariable)) %>%
+  ggplot(aes(x = newVariable, y = time.days)) +
+  ggdist::stat_halfeye(
+                       alpha = 0.35,
+                       ## custom bandwidth
+                       adjust = .5, 
+                       ## adjust height
+                       width = 1.9, 
+                       ## move geom to the right
+                       justification = -.1, 
+                       ## remove slab interval
+                       .width = 0, 
+                       point_colour = NA) +
+  geom_boxplot(width = .12) +
+  theme(panel.background = element_rect(fill="white"),
+      axis.line = element_line(color = "black"),
+      axis.text.x = element_text(size = 12, colour="black", 
+                                 angle = 30, vjust = 1, hjust = 1))
 
