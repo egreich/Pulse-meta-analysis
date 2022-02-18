@@ -41,7 +41,7 @@ d_study <- dataIN_study %>%
 
 d_study <- d_study[rowSums(is.na(d_study)) != ncol(d_study), ] # remove extra rows
 
-##### Clean pulse table #####
+##### Clean pulse table, join with study table #####
 d_pulse <- dataIN_pulse %>%
   rename(percent.C4 = X.C4,
          Plant.biomass.cover.LAI = Plant.biomass..cover.LAI)
@@ -94,33 +94,35 @@ for(i in 1:length(colnames(d_pulse1))) {
 d_pulse <- full_join(d_pulse1, d_pulse2) 
 
 
-# Combine variable names that are the same, 
+##### Clean record table, join with pulse/study table #####
 # drop variable names we don't need yet for the prelim analysis 
 # (see 11/3 /21 meeting notes)
 # If the newVariable column has NAs, fill in with Variable column
 d_record <- dataIN_record %>%
-  filter(!Variable %in% c("RH", "VPD", "Air temp", "observed leaf delta18O", "observed evaporation delta18O", "observed ET delta18O",
-                          "modelled T delta18O", "modelled evaporation delta18O", "observed leaf delta18O", "Euclidean distance from orgin",
-                          "Euclidean distance", "Cumulative euclidean distance", "biomass increment", "ci", "modelled evaporation")) %>%
-  mutate(newVariable = case_when(Variable %in% c("rsoil", "rhetero", "rauto", "LN(rsoil)") ~ "belowgroundR",
-                                 Variable %in% c("rd") ~ "abovegroundgroundR",
-                                 Variable %in% c("reco") ~ "ecosystemR",
-                                 Variable %in% c("npp", "nee") ~ "NPP",
-                                 Variable %in% c("gpp", "gee") ~ "GPP",
-                                 Variable %in% c("gs", "stomatal conductance") ~ "stomatal conductance",
-                                 Variable %in% c("VWC", "soil water content") ~ "soil water content",
-                                 Variable %in% c("stem sapflow velocity", "sap velocity", "root sap velocity" , 
-                                                 "lateral root sapflow velocity", "primary sinker root sapflow velocity", "t (transpiration)") ~ "T"),
-         newVariable = ifelse(is.na(newVariable), Variable, newVariable)) %>%
+  filter(!Variable %in% c("RH", "VPD", "Air temp", "observed leaf delta18O", "
+                          observed evaporation delta18O", "observed ET delta18O",
+                          "modelled T delta18O", "modelled evaporation delta18O", 
+                          "observed leaf delta18O", "Euclidean distance from orgin",
+                          "Euclidean distance", "Cumulative euclidean distance", 
+                          "biomass increment", "ci", "modelled evaporation")) %>%
+  mutate(varType = case_when(Variable %in% c("rsoil", "rhetero", "rauto", "LN(rsoil)") ~ "belowgroundR",
+                             Variable %in% c("rd") ~ "abovegroundgroundR",
+                             Variable %in% c("reco") ~ "ecosystemR",
+                             Variable %in% c("npp", "nee") ~ "NPP",
+                             Variable %in% c("gpp", "gee") ~ "GPP",
+                             Variable %in% c("gs", "stomatal conductance") ~ "stomatal conductance",
+                             Variable %in% c("VWC", "soil water content") ~ "soil water content",
+                             Variable %in% c("stem sapflow velocity", "sap velocity", 
+                                             "root sap velocity", "lateral root sapflow velocity", 
+                                             "primary sinker root sapflow velocity", "t (transpiration)") ~ "T"),
+         varType = ifelse(is.na(varType), Variable, varType)) %>%
   drop_na(Study.ID)# drop rows with Study.ID NAs (gets rid of extra rows) 
-        
-# should we also combine anet and PAR?
 
+# Check why left_join results in more rows!!!
+foo <- anti_join(d_pulse, d_record)
+d_all <- d_record %>%
+  left_join(d_pulse, by = c("Study.ID", "Pulse.ID"))
 
-
-
-
-# Save the cleaned data as .Rdata 
 # Create folder for cleaned data if it does not already exist
 if(!file.exists("data_clean")) { dir.create("data_clean")} 
 
@@ -128,63 +130,3 @@ write.csv(d_record, file = "data_clean/Clean_record_info.csv",
           row.names = FALSE)
 
 
-#### Initial graphs
-if(!file.exists("plots")) { dir.create("plots")} # create plots folder if it doesn't exist
-path_out = "./plots/" # set save path
-
-### Make vegetation count graph
-d_veg_count <- d_study %>%
-  count(Vegetation.type)
-
-# The parentheses here just automatically call the plot
-# similar to just typing p_veg after
-(p_veg <- ggplot(d_veg_count) +
-    geom_bar(aes(x=n, y=Vegetation.type), position="dodge", stat = "identity") +
-    labs(title = NULL, y = NULL, x = "count") +
-    theme(legend.position = "right",
-          legend.title = element_blank(),
-          legend.text=element_text(size=9),
-          text = element_text(size=12),
-          panel.background = element_rect(fill="white"),
-          axis.line = element_line(color = "black"),
-          axis.text.x = element_text(colour="black", angle = 90),
-          plot.title = element_text(hjust = 0.5)))
-
-ggsave2("p_veg.png", plot = p_veg, path = path_out) # save veg type count plot
-
-### Make variable count graph
-d_var_count <- dataIN_record %>%
-  count(Variable)
-
-(p_var <- ggplot(d_var_count) +
-    geom_bar(aes(x=n, y=Variable), position="dodge", stat = "identity") +
-    labs(title = NULL, y = "variables", x = "measurements") +
-    theme(legend.position = "right",
-          legend.title = element_blank(),
-          legend.text=element_text(size=9),
-          text = element_text(size=12),
-          panel.background = element_rect(fill="white"),
-          axis.line = element_line(color = "black"),
-          axis.text.x = element_text(colour="black", angle = 90),
-          plot.title = element_text(hjust = 0.5)))
-
-ggsave2("p_var.png", plot = p_var, path = path_out)
-
-### Make a new variable count plot
-d_var_count <- d_record %>%
-  count(newVariable)
-
-
-(p_var_filtered <- ggplot(d_var_count) +
-    geom_bar(aes(x=n, y=newVariable), position="dodge", stat = "identity") +
-    labs(title = NULL, y = "variables", x = "measurements") +
-    theme(legend.position = "right",
-          legend.title = element_blank(),
-          legend.text=element_text(size=9),
-          text = element_text(size=12),
-          panel.background = element_rect(fill="white"),
-          axis.line = element_line(color = "black"),
-          axis.text.x = element_text(colour="black", angle = 90),
-          plot.title = element_text(hjust = 0.5)))
-
-ggsave2("p_var_filtered.png", plot = p_var_filtered, path = path_out)
