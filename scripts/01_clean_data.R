@@ -21,6 +21,11 @@ dataIN_record = read.csv("./data_raw/Combined_record_info.csv",
                          header = TRUE, skip = 1,
                          na.strings = "")[,1:17] # Remove extraneous empty columns
 
+#
+#temp <- dataIN_study %>%
+#  group_by(Study.ID) %>%
+#  summarize( n = n())
+
 
 # Clean study table
 d_study <- dataIN_study %>%
@@ -40,16 +45,88 @@ d_study <- dataIN_study %>%
                                   Vegetation.type)) %>%
   relocate(Paper.ID)
 
-# Clean pulse table
-# d_pulse1 has no pulse-level covariates (study level)
-# d_pulse2 has pulse-level covariates
-d_pulse2 <- dataIN_pulse %>%
-  filter()
+d_study <- d_study[rowSums(is.na(d_study)) != ncol(d_study), ] # remove extra rows
 
-### Combine variable names that are the same, 
-### drop variable names we don't need yet for the prelim analysis 
-### (see 11/3 /21 meeting notes)
-### If the newVariable column has NAs, fill in with Variable column
+
+# Notes:
+# for the overlapping papers, people input data slightly differently
+# so we probably don't want to just go with the first name
+# but for now, this could work for testing the code
+#d_study <- d_study[!duplicated(d_study$Study.ID), ] # remove extra records (will have to do this in records and pulse table)
+                                                    # but the pulse table might be ok if we use distinct()
+
+# Clean pulse table
+d_pulse <- dataIN_pulse %>%
+  rename(percent.C4 = X.C4)
+
+d_pulse <- d_pulse[rowSums(is.na(d_pulse)) != ncol(d_pulse), ] # remove extra rows
+
+# Split into two tables w/o overlapping study IDs
+for(i in 1:nrow(d_pulse)){
+  d_pulse$n.Study.vars[i] <- sum(!is.na(d_pulse[i,13:27]))
+}
+
+
+temp <- d_pulse %>%
+  group_by(Study.ID)%>%
+  summarize(un = unique(n.Study.vars))
+
+# duplicate d_pulse
+
+# d_pulse1 has no pulse-level covariates (study level)
+d_pulse1 <- d_pulse[d_pulse$n.Study.vars == 0, ]
+d_pulse1 <- d_pulse1[,-c(13:27) ] # remove site variable columns
+d_pulse1 <- left_join(d_pulse1, d_study, by= c("Study.ID")) # Combine pulse1 and study table
+
+# d_pulse2 has pulse-level covariates
+d_pulse2 <- d_pulse[d_pulse$n.Study.vars != 0, ] %>%
+  rename(Plant.biomass.cover.LAI = Plant.biomass..cover.LAI)
+
+temp_d_study <- subset(d_study, select = -c(Soil.texture, Soil.C.N, Soil.C.content, Soil.organic.matter.content, Soil.pH,
+                             Plant.biomass.cover.LAI, Plant.bio.cov.LAI.units, Dominant.species, Species.diversity,
+                             Species.diversity.type, percent.C4)) # remove duplicates for combining
+
+d_pulse2 <- left_join(d_pulse2, temp_d_study, by= c("Study.ID")) %>% # Combine pulse2 and study table
+  rename(Notes.pulse = Notes.x, Notes.site = Notes.y)
+
+d_pulse2$Soil.C.content <- as.numeric(d_pulse2$Soil.C.content) # this was messing up combining the tables
+d_pulse2$Soil.organic.matter.content<- as.character(d_pulse2$Soil.organic.matter.content)
+d_pulse2$Plant.biomass.cover.LAI<- as.character(d_pulse2$Plant.biomass.cover.LAI)
+
+# Clean up d_pulse1 so column order and name are identical  to d_pulse2
+d_pulse1 <- d_pulse1 %>%
+  rename(Notes.pulse = Notes.x, Notes.site = Notes.y)%>%
+  mutate(Rooting.depth = NA, Rooting.depth.units = NA, Planting.date = NA, Establish.or.planted = NA)
+d_pulse1 <- d_pulse1[, c(1,2,3,4,5,6,7,8,9,10,11,12, 42,43,44,45, 30, 55,56, 36,37,38,39,40,41, 57, 58, 
+                         13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29, 31,32,33,34,35, 46,47,48,49,50,51,52,53,54)] # Reorder columns
+
+# this was messing up combining the tables
+d_pulse1$Soil.C.content <- gsub("%", "", d_pulse1$Soil.C.content)
+d_pulse1$Soil.organic.matter.content <- gsub("%", "", d_pulse1$Soil.organic.matter.content)
+d_pulse1$Soil.C.content <- as.numeric(d_pulse1$Soil.C.content)
+d_pulse1$Soil.pH <- as.numeric(d_pulse1$Soil.pH )
+
+# Rbind
+
+test <- full_join(d_pulse1, d_pulse2) # works?
+
+d_pulse_study <- rbind(d_pulse1, d_pulse2) # does not work
+
+
+# Currently, still duplicate pulse numbers for study 150 (all done by one person), but some entries are more
+# complete than others, so this is likely just an duplicate entry mistake. We can probably use a
+# slightly edited version of distinct() to fix this, but should check the record data for duplicates first
+
+# Clean record table
+
+# Remove duplicate entries from people overlapping on papers
+# distinct Study.ID, Pulse.ID, Time.relative.to.pulse
+
+
+# Combine variable names that are the same, 
+# drop variable names we don't need yet for the prelim analysis 
+# (see 11/3 /21 meeting notes)
+# If the newVariable column has NAs, fill in with Variable column
 d_record <- dataIN_record %>%
   filter(!Variable %in% c("RH", "VPD", "Air temp", "observed leaf delta18O", "observed evaporation delta18O", "observed ET delta18O",
                           "modelled T delta18O", "modelled evaporation delta18O", "observed leaf delta18O", "Euclidean distance from orgin",
