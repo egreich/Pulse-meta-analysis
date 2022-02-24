@@ -5,6 +5,69 @@ library(dplyr)
 library(ggplot2)
 library(ggdist)
 
+## From other script ###
+if(!file.exists("plots")) { dir.create("plots")} # create plots folder if it doesn't exist
+path_out = "./plots/" # set save path
+
+### Make vegetation count graph
+d_veg_count <- d_study %>%
+  count(Vegetation.type)
+
+# The parentheses here just automatically call the plot
+# similar to just typing p_veg after
+(p_veg <- ggplot(d_veg_count) +
+    geom_bar(aes(x=n, y=Vegetation.type), position="dodge", stat = "identity") +
+    labs(title = NULL, y = NULL, x = "count") +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.text=element_text(size=9),
+          text = element_text(size=12),
+          panel.background = element_rect(fill="white"),
+          axis.line = element_line(color = "black"),
+          axis.text.x = element_text(colour="black", angle = 90),
+          plot.title = element_text(hjust = 0.5)))
+
+ggsave2("p_veg.png", plot = p_veg, path = path_out) # save veg type count plot
+
+### Make variable count graph
+d_var_count <- dataIN_record %>%
+  count(Variable)
+
+(p_var <- ggplot(d_var_count) +
+    geom_bar(aes(x=n, y=Variable), position="dodge", stat = "identity") +
+    labs(title = NULL, y = "variables", x = "measurements") +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.text=element_text(size=9),
+          text = element_text(size=12),
+          panel.background = element_rect(fill="white"),
+          axis.line = element_line(color = "black"),
+          axis.text.x = element_text(colour="black", angle = 90),
+          plot.title = element_text(hjust = 0.5)))
+
+ggsave2("p_var.png", plot = p_var, path = path_out)
+
+### Make a new variable count plot
+d_var_count <- d_record %>%
+  count(newVariable)
+
+
+(p_var_filtered <- ggplot(d_var_count) +
+    geom_bar(aes(x=n, y=newVariable), position="dodge", stat = "identity") +
+    labs(title = NULL, y = "variables", x = "measurements") +
+    theme(legend.position = "right",
+          legend.title = element_blank(),
+          legend.text=element_text(size=9),
+          text = element_text(size=12),
+          panel.background = element_rect(fill="white"),
+          axis.line = element_line(color = "black"),
+          axis.text.x = element_text(colour="black", angle = 90),
+          plot.title = element_text(hjust = 0.5)))
+
+ggsave2("p_var_filtered.png", plot = p_var_filtered, path = path_out)
+
+#####
+
 # Read in record-level data
 d_record <- read_csv("data_clean/Clean_record_info.csv")
 str(d_record)
