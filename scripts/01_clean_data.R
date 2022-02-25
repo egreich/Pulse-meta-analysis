@@ -99,12 +99,12 @@ d_pulse <- full_join(d_pulse1, d_pulse2)
 # (see 11/3 /21 meeting notes)
 # If the newVariable column has NAs, fill in with Variable column
 d_record <- dataIN_record %>%
-  filter(!Variable %in% c("RH", "VPD", "Air temp", "observed leaf delta18O", "
-                          observed evaporation delta18O", "observed ET delta18O",
-                          "modelled T delta18O", "modelled evaporation delta18O", 
-                          "observed leaf delta18O", "Euclidean distance from orgin",
-                          "Euclidean distance", "Cumulative euclidean distance", 
-                          "biomass increment", "ci", "modelled evaporation")) %>%
+  #filter(!Variable %in% c("RH", "VPD", "Air temp", "observed leaf delta18O", "
+   #                       observed evaporation delta18O", "observed ET delta18O",
+   #                       "modelled T delta18O", "modelled evaporation delta18O", 
+   #                       "observed leaf delta18O", "Euclidean distance from orgin",
+    #                      "Euclidean distance", "Cumulative euclidean distance", 
+    #                      "ci", "modelled evaporation")) %>%
   mutate(varType = case_when(Variable %in% c("rsoil", "rhetero", "rauto", "LN(rsoil)") ~ "belowgroundR",
                              Variable %in% c("rd") ~ "abovegroundgroundR",
                              Variable %in% c("reco") ~ "ecosystemR",
@@ -118,15 +118,15 @@ d_record <- dataIN_record %>%
          varType = ifelse(is.na(varType), Variable, varType)) %>%
   drop_na(Study.ID)# drop rows with Study.ID NAs (gets rid of extra rows) 
 
-# Check why left_join results in more rows!!!
-foo <- anti_join(d_pulse, d_record)
+# Join d_record with combined pulse table
 d_all <- d_record %>%
   left_join(d_pulse, by = c("Study.ID", "Pulse.ID"))
+
 
 # Create folder for cleaned data if it does not already exist
 if(!file.exists("data_clean")) { dir.create("data_clean")} 
 
-write.csv(d_record, file = "data_clean/Clean_record_info.csv",
+write.csv(d_all, file = "data_clean/Clean_record_info.csv",
           row.names = FALSE)
 
 
