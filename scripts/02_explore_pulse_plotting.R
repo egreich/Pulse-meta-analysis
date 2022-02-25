@@ -3,32 +3,19 @@
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(cowplot)
 library(ggdist)
 
 # Import data
-d_clean = read.csv("./data_clean/Clean_record_info.csv", 
-                        header = TRUE,
-                        na.strings = "")
-# Make select columns numeric
-d_clean = d_clean %>%
-  mutate(Pulse.ID = as.numeric(Pulse.ID),
-         Time.relative.to.pulse = as.numeric(Time.relative.to.pulse),
-         Mean = as.numeric(Mean),
-         SD = as.numeric(SD),
-         N = as.numeric(N),
-         Duration.of.pulse = as.numeric(Duration.of.pulse),
-         Pulse.amount = as.numeric(Pulse.amount),
-         Elevation.m = as.numeric(Elevation.m),
-         Latitude = as.numeric(Latitude),
-         Longitude = as.numeric(Longitude),
-         MAT.C = as.numeric(MAT.C),
-         MAP.mm = as.numeric(MAP.mm))
+d_clean = read_csv("./data_clean/Clean_record_info.csv")
+
+str(d_clean)
 
 ## Create a folder for plots
 if(!file.exists("plots")) { dir.create("plots")} # create plots folder if it doesn't exist
 path_out = "./plots/" # set save path
 
-### Make vegetation count graph
+##### Make vegetation and variable count graphs ##### 
 d_veg_count <- d_clean %>%
   count(Vegetation.type)
 
@@ -48,7 +35,7 @@ d_veg_count <- d_clean %>%
 
 ggsave2("p_veg.png", plot = p_veg, path = path_out) # save veg type count plot
 
-### Make variable count graph
+# Make variable count graph
 d_var_count <- d_clean %>%
   count(varType)
 
@@ -66,7 +53,7 @@ d_var_count <- d_clean %>%
 
 ggsave2("p_var.png", plot = p_var, path = path_out)
 
-#####
+##### Check pulse response plots by variable #####
 
 # Convert pulse timing units to days
 count(d_clean, Time.relative.to.pulse.unit)
@@ -91,8 +78,11 @@ d_clean2 <- d_clean %>%
 # Calculate the maximum size of the response 
 # excepting plant water potential and gpp which are negative
 d_pulse_max <- d_clean %>%
-  group_by(Study.ID, Pulse.ID, Variable, Soil.texture, Vegetation.type, MAP.mm) %>%
-  summarize(max_val = max(Mean)) %>%
+  group_by(Study.ID, Pulse.ID, Variable) %>%
+  summarize(max_val = max(Mean),
+            Soil.texture = unique(Soil.texture),
+            Vegetation.type = unique(Vegetation.type),
+            MAP.mm = unique(MAP.mm)) %>%
   filter(max_val > 0)
 
 # Join d_record2 and d_pulse_max, excluding variables with negative max values
@@ -111,21 +101,32 @@ d_clean3 %>%
 
 # Try standardizing rather than scaling by the max
 d_clean4 <- d_clean2 %>%
-  group_by(Study.ID, Pulse.ID, Variable, Soil.texture, Vegetation.type, MAP.mm) %>%
+  group_by(Study.ID, Pulse.ID, Variable) %>%
   summarize(rescale_Mean = scale(Mean),
             varType = unique(varType),
-            time.days = time.days)
+            time.days = time.days, 
+            Soil.texture = unique(Soil.texture),
+            Vegetation.type = unique(Vegetation.type),
+            MAP.mm = unique(MAP.mm))
 
-d_clean4 %>%
+(p_pulse_var <- d_clean4 %>%
   filter(!is.na(varType)) %>%
   ggplot(aes(x = time.days, y = rescale_Mean)) +
   geom_vline(xintercept = 0, color = "red") +
   geom_point(alpha = 0.25) +
   facet_wrap(~varType, scales = "free") +
   theme_bw()
+)
+
+ggsave2("pulse_pattern_var.png",
+        plot = p_pulse_var,
+        path = path_out,
+        height = 8,
+        width = 8,
+        units = "in") 
 
 # Color by soil type
-imp_var <- c("stomatal conductance", "anet (photosynthesis)","T", "ecosystem R", "plant water potential", "wue", "soil water potential") # narrow down variables
+imp_var <- c("Gs", "Anet","T", "ecosystem R", "PWP", "WUE", "SWP") # narrow down variables
 
 d_clean4 %>%
   filter(varType %in% imp_var) %>%
@@ -151,7 +152,7 @@ d_clean4 %>%
   facet_wrap(~varType, scales = "free")
 
 # Raincloud plot of # study IDs per variable per time
-d_clean4 %>%
+p_dur_var <- d_clean4 %>%
   filter(!is.na(varType)) %>%
   ggplot(aes(x = varType, y = time.days)) +
   ggdist::stat_halfeye(
@@ -165,9 +166,13 @@ d_clean4 %>%
                        ## remove slab interval
                        .width = 0, 
                        point_colour = NA) +
-  geom_boxplot(width = .12) +
-  theme(panel.background = element_rect(fill="white"),
-      axis.line = element_line(color = "black"),
-      axis.text.x = element_text(size = 12, colour="black", 
-                                 angle = 30, vjust = 1, hjust = 1))
-
+  geom_boxplot(width = .12,
+               alpha = 0.5) +
+  coord_flip() +
+  theme_bw(base_size = 12)
+ggsave2("pulse_duration_var.png",
+        plot = p_dur_var,
+        path = path_out,
+        height = 8,
+        width = 6,
+        units = "in") 
