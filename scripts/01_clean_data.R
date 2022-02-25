@@ -4,9 +4,6 @@
 ### Initial figures that summarize the types of data
 
 library(tidyverse)
-library(ggplot2)
-library(gridExtra)
-library(cowplot)
 library(lubridate)
 
 
@@ -106,12 +103,17 @@ d_record <- dataIN_record %>%
     #                      "Euclidean distance", "Cumulative euclidean distance", 
     #                      "ci", "modelled evaporation")) %>%
   mutate(varType = case_when(Variable %in% c("rsoil", "rhetero", "rauto", "LN(rsoil)") ~ "belowgroundR",
-                             Variable %in% c("rd") ~ "abovegroundgroundR",
+                             Variable %in% c("rd") ~ "abovegroundR",
                              Variable %in% c("reco") ~ "ecosystemR",
                              Variable %in% c("npp", "nee") ~ "NPP",
                              Variable %in% c("gpp", "gee") ~ "GPP",
-                             Variable %in% c("gs", "stomatal conductance") ~ "stomatal conductance",
-                             Variable %in% c("VWC", "soil water content") ~ "soil water content",
+                             Variable %in% c("anet (photosynthesis") ~ "Anet",
+                             Variable %in% c("et") ~ "ET",
+                             Variable %in% c("wue") ~ "WUE",
+                             Variable %in% c("gs", "stomatal conductance") ~ "Gs",
+                             Variable %in% c("soil water potential") ~ "SWP",
+                             Variable %in% c("plant water potential") ~ "PWP",
+                             Variable %in% c("VWC", "soil water content") ~ "SWC",
                              Variable %in% c("stem sapflow velocity", "sap velocity", 
                                              "root sap velocity", "lateral root sapflow velocity", 
                                              "primary sinker root sapflow velocity", "t (transpiration)") ~ "T"),
