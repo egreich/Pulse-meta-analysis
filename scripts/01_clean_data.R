@@ -107,7 +107,7 @@ d_record <- dataIN_record %>%
                              Variable %in% c("reco") ~ "ecosystemR",
                              Variable %in% c("npp", "nee") ~ "NPP",
                              Variable %in% c("gpp", "gee") ~ "GPP",
-                             Variable %in% c("anet (photosynthesis") ~ "Anet",
+                             Variable %in% c("anet (photosynthesis)") ~ "Anet",
                              Variable %in% c("et") ~ "ET",
                              Variable %in% c("wue") ~ "WUE",
                              Variable %in% c("gs", "stomatal conductance") ~ "Gs",
