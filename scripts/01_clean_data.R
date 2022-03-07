@@ -131,4 +131,6 @@ if(!file.exists("data_clean")) { dir.create("data_clean")}
 write.csv(d_all, file = "data_clean/Clean_record_info.csv",
           row.names = FALSE)
 
+save(d_all, file = "pulse_app/data_clean.Rdata")
+
 
