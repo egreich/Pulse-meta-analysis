@@ -122,13 +122,19 @@ d_record <- dataIN_record %>%
 
 # Join d_record with combined pulse table
 d_all <- d_record %>%
-  left_join(d_pulse, by = c("Study.ID", "Pulse.ID"))
+  left_join(d_pulse, by = c("Study.ID", "Pulse.ID")) %>%
+  mutate(Mean = as.numeric(Mean),
+         SD = as.numeric(SD))
 
 
 # Create folder for cleaned data if it does not already exist
 if(!file.exists("data_clean")) { dir.create("data_clean")} 
 
+# Save as csv in data_clean/
 write.csv(d_all, file = "data_clean/Clean_record_info.csv",
           row.names = FALSE)
+
+# Save as .Rdata in pulse_app/
+save(d_all, file = "pulse_app/d_all.Rdata")
 
 
