@@ -92,4 +92,93 @@ write.csv(count1_df, file = "data_clean/tables/matrix_study_record.csv")
 write.csv(count2_df, file = "data_clean/tables/matrix_pulse_record.csv")
 
 
+# Populate matrix of the number of overlapping covariates
+# Diagonal: # of records that overlap
+# Above: # of studies with both variables
+# Below: # of observations with both variables
+
+# Important covariates for soil and air
+# response variables on x-axis (top)
+# covariates on y-axis (side)
+unique(d_clean$varType)
+cov_soil <- c("Tsoil", "SWC", "SWP")
+cov_air <- c("Tair", "PAR", "RH", "VPD")
+
+# Air covariates matrix
+cov_mat_air <- matrix(NA, 
+                     nrow = length(cov_air),
+                     ncol = length(variables))
+
+for(i in 1:length(cov_air)){
+  for(j in 1:length(variables)){
+    
+    # check if study has both cov_air and variables
+    o_study <- d_clean %>%
+      filter(varType == cov_air[i] | varType == variables[j]) %>%
+      group_by(Study.ID) %>%
+      summarise(nvar = length(unique(varType))) %>%
+      filter(nvar == 2)
+    
+    # if both are present, count the number of study pulses of variable
+    # assuming cov_air encompasses all pulses
+    o_pulse <- d_clean %>%
+      filter(Study.ID %in% o_study$Study.ID & varType == variables[j]) %>%
+      group_by(study_pulse) %>%
+      summarise(npulse = length(unique(Pulse.ID))) %>%
+      nrow()
+    
+    cov_mat_air[i,j] <- o_pulse
+  }
+}
+
+
+
+
+
+# Soil covariates matrix
+cov_mat_soil <- matrix(NA, 
+                     nrow = length(cov_soil),
+                     ncol = length(variables))
+
+for(i in 1:length(cov_soil)){
+  for(j in 1:length(variables)){
+    
+    # check if study has both cov_air and variables
+    o_study <- d_clean %>%
+      filter(varType == cov_soil[i] | varType == variables[j]) %>%
+      group_by(Study.ID) %>%
+      summarise(nvar = length(unique(varType))) %>%
+      filter(nvar == 2)
+    
+    # if both are present, count the number of study pulses of variable
+    # assuming cov_air encompasses all pulses
+    o_pulse <- d_clean %>%
+      filter(Study.ID %in% o_study$Study.ID & varType == variables[j]) %>%
+      group_by(study_pulse) %>%
+      summarise(npulse = length(unique(Pulse.ID))) %>%
+      nrow()
+    
+    cov_mat_soil[i,j] <- o_pulse
+  }
+}
+
+# Convert air and soil matrixes to dataframes, label
+cov_mat_air_df <- data.frame(cov_mat_air) 
+colnames(cov_mat_air_df) <- variables
+rownames(cov_mat_air_df) <- cov_air
+
+cov_mat_soil_df <- data.frame(cov_mat_soil) 
+colnames(cov_mat_soil_df) <- variables
+rownames(cov_mat_soil_df) <- cov_soil
+
+
+# write out
+if(!dir.exists("data_clean/tables")) {
+  dir.create("data_clean/tables")
+}
+write.csv(cov_mat_air_df, file = "data_clean/tables/matrix_air_covariates.csv")
+
+write.csv(cov_mat_soil_df, file = "data_clean/tables/matrix_soil_covariates.csv")
+
+
 

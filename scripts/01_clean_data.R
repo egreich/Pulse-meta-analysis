@@ -116,7 +116,9 @@ d_record <- dataIN_record %>%
                              Variable %in% c("VWC", "soil water content") ~ "SWC",
                              Variable %in% c("stem sapflow velocity", "sap velocity", 
                                              "root sap velocity", "lateral root sapflow velocity", 
-                                             "primary sinker root sapflow velocity", "t (transpiration)") ~ "T"),
+                                             "primary sinker root sapflow velocity", "t (transpiration)") ~ "T",
+                             Variable %in% c("Air temp") ~ "Tair",
+                             Variable %in% c("soil temperature") ~ "Tsoil"),
          varType = ifelse(is.na(varType), Variable, varType)) %>%
   drop_na(Study.ID)# drop rows with Study.ID NAs (gets rid of extra rows) 
 
