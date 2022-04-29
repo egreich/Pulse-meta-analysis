@@ -162,7 +162,8 @@ for(i in 1:length(cov_soil)){
   }
 }
 
-# Convert air and soil matrixes to dataframes, label
+# Convert air and soil matrices to dataframes, label
+# number of pulses with both the env variable and response
 cov_mat_air_df <- data.frame(cov_mat_air) 
 colnames(cov_mat_air_df) <- variables
 rownames(cov_mat_air_df) <- cov_air

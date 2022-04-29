@@ -20,7 +20,7 @@ shinyServer(function(input, output) {
 
         # Filter d_all by selected variable types
         temp_d <- d_all %>%
-            filter(varType %in% input$vars) 
+            filter(varType %in% "WUE") #input$vars
 
         # Plot time-series for each pulse
         ggplot(temp_d, aes(x = time.days, 
