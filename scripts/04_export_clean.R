@@ -40,23 +40,20 @@ et_pulse <- et %>%
             controlMean = Mean[which.min(Days.relative.to.pulse)],
             controlSD = SD[which.min(Days.relative.to.pulse)])
 
-# Study 855_3 pulse 1 has missing ET value for -1 days since pulse
-# Emma to re-extract and add
-
 # Merge et_pulse back to ET
 # Calculate LRR for each day
 et2 <- et %>%
   left_join(et_pulse, by = c("Study.ID", "Pulse.ID", "Source.file.name")) %>%
   mutate(LRR = log(Mean/controlMean),
-         poolVar = case_when(SD.type == "SD" ~ ((SD^2 + controlSD^2)/(2*N)*(1/Mean^2 + 1/controlMean^2))))
+         poolVar = case_when(SD.type == "SD" ~ ((SD^2 + controlSD^2)/(2*N)*(1/Mean^2 + 1/controlMean^2)),
+                             SD.type == "SE" ~ ((SD^2 + controlSD^2)/2*(1/Mean^2 + 1/controlMean^2))))
 
 # Sanity check
 et2 %>%
   ggplot(aes(x = Days.relative.to.pulse,
              y = LRR, 
              color = Study.ID)) +
-  geom_point() +
-  scale_x_continuous(limits = c(-1, 5))
+  geom_point()
 
 # Save to models/01-test-Ricker
-save(et2, file = "models/01-test-Ricker/input.Rdata")
+save(et2, file = "models/01-test-Ricker/inputET.Rdata")
