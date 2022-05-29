@@ -1,0 +1,28 @@
+model{
+  for(i in 1:N){
+    # Likelihood
+    et[i] ~ dnorm(mu[i], tau)
+    # Replicated data
+    et.rep[i] ~ dnorm(mu[i], tau)
+    
+    # Mean model
+    mu[i] <- a[sID[i]]*t[i]*exp(-b[sID[i]]*t[i])
+
+    # Square differences
+    Sqdiff[i] <- pow(et[i] - et.rep[i], 2) 
+  }
+  
+  # Priors for Ricker model and variance
+  for(s in 1:Nstudy){ # number of studies
+    a[s] ~ dgamma(0.1, 0.1)
+    b[s] ~ dgamma(0.1, 0.1)
+  }
+
+  tau ~ dgamma(0.01, 0.01)
+  
+  # Standard deviation to monitor
+  sig <- pow(tau, -0.5)
+  
+  # Dsum
+  Dsum <- sum(Sqdiff[])
+}
