@@ -6,18 +6,42 @@ model{
     et.rep[i] ~ dnorm(mu[i], tau)
     
     # Mean model
-    mu[i] <- a[sID[i]]*t[i]*exp(-b[sID[i]]*t[i])
-
+    # KO: This model, below, is highly non-linear and could lead to numerical errors or mixing issues.
+    #mu[i] <- a[sID[i]]*t[i]*exp(-b[sID[i]]*t[i])
+    # KO: Here's an alternative that is reparameterized in terms of "meaningful" parameters and first
+    # evaluated on the Log-scale:
+    Lmu[i] <- 1 - t[i]/exp(Lpeakt[sID[i]]) + Lmaxy[sID[i]] + Lpeakt[sID[i]] + Log[t[i]]
+    # KO: exponential to "regular" scale:
+    mu[i] <- exp(Lmu[i])
+    
     # Square differences
     Sqdiff[i] <- pow(et[i] - et.rep[i], 2) 
   }
   
   # Priors for Ricker model and variance
   for(s in 1:Nstudy){ # number of studies
-    a[s] ~ dgamma(0.1, 0.1)
-    b[s] ~ dgamma(0.1, 0.1)
-  }
-
+  # KO: I would model the parameters hierarchically. The reparmeterized model is in terms
+  # of the time (t) at which the response peaks (peakt) and the maximum response value at
+  # the peak (maxy)
+    #a[s] ~ dgamma(0.1, 0.1)
+    #b[s] ~ dgamma(0.1, 0.1)
+    # KO: Priors on log-scale:
+    Lpeakt[s] ~ dnorm(mu.Lpeakt, tau.Lpeakt)
+    Lmaxy[s] ~ dnorm(mu.Lmaxy, tau.Lmaxy)   
+    # KO: transform to "meaningful" scale:
+    peakt[s] <- exp(Lpeakt[s])
+    maxy[s] <- exp(Lmaxy[s])
+}
+# KO: priors for population level parameters:
+    mu.Lpeakt ~ dnorm(0,0.00001)
+    mu.Lmaxy ~ dnorm(0,0.00001)
+    mu.peakt <- exp(mu.Lpeakt)
+    mu.maxy <- exp(mu.Lmaxy)
+    sig.Lpeakt ~ dunif(0,100)
+    sig.Lmaxy ~ dunif(0,100)
+    tau.Lpeakt <- pow(sig.Lpeakt,-2)
+    tau.Lmaxy <- pow(sig.Lmaxy,-2)
+    
   tau ~ dgamma(0.01, 0.01)
   
   # Standard deviation to monitor
