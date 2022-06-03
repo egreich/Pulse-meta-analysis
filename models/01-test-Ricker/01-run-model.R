@@ -1,10 +1,15 @@
 ### Initial Ricker model for ET subset of response variables
 
+if(!"postjags" %in% installed.packages()) {
+  devtools::install_github("fellmk/PostJAGS/postjags")
+}
+
 library(rjags)
 load.module('dic')
 library(dplyr)
 library(ggplot2)
 library(mcmcplots)
+library(postjags)
 
 # Load data
 load("models/01-test-Ricker/inputET.Rdata")
@@ -28,36 +33,75 @@ datlist <- list(et = et2$LRR,
                 N = nrow(et2),
                 Nstudy = max(et2$sID))
 
-# Initial values
+# Initial values: manual specification to get model started
 inits <- function(){
-  list(#a = runif(datlist$Nstudy, 0, 10),
-       #b = runif(datlist$Nstudy, 0, 10),
+  list(mu.Lpeakt = rnorm(1, 0, 10),
+       mu.Lmaxy = rnorm(1, 0, 10),
+       sig.Lpeakt = runif(1, 0, 10),
+       sig.Lmaxy = runif(1, 0, 10),
        tau = runif(1, 0, 1))
 }
 initslist <- list(inits(), inits(), inits())
 
+# Initial values: from saved state
+load("models/01-test-Ricker/inits/inits.Rdata")
+
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/model1.jags",
                  data = datlist,
-                 inits = initslist,
+                 inits = saved_state[[2]], # initslist
                  n.chains = 3)
 
 update(jm, 10000)
 
 # Run and monitor parameters
-# took out "a" and "b"
-params <- c("deviance", "Dsum",
-            "peakt", "maxy",
-            "mu.peakt","mu.maxy",
-            "sig","tau")
+params <- c("deviance", "Dsum", # model performance metrics
+            "peakt", "maxy", # study-level peakt and maxy
+            "mu.peakt","mu.maxy", # population-level peakt and maxy
+            "mu.Lpeakt","mu.Lmaxy", # population-level parameters on log scale, needed to reinitialize
+            "sig","tau", # sample sd and precision, needed to reinitialize
+            "sig.Lpeakt", "sig.Lmaxy") # sd among study-level log parameters, needed to reinitialize)
 
 jm_coda <- coda.samples(jm, variable.names = params,
                         n.iter = 9000, thin = 3)
 
-# Plot output
-mcmcplot(jm_coda, parms = c("deviance", "Dsum", "peakt", "maxy", "mu.peakt","mu.maxy", "sig", "tau"))
-
-ricker = function(x, a = 1, b = 1) {
-  a * x * exp(-b * x)
+# If converged, save out
+if(!dir.exists("models/01-test-Ricker/coda")) {
+  dir.create("models/01-test-Ricker/coda")
 }
-plot(seq(-1, 10, 0.1), ricker(seq(-1, 10, 0.1), 1.2, 0.8))
+save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
+
+
+# Plot output
+mcmcplot(jm_coda, parms = c("deviance", "Dsum", 
+                            "peakt", "maxy", 
+                            "mu.peakt","mu.maxy", 
+                            "sig", "sig.Lpeakt", "sig.Lmaxy"))
+                            # "mu.Lpeakt","mu.Lmaxy", "tau"))
+
+# Check convergence
+gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
+  tibble::rownames_to_column(var = "term")
+  
+filter(gel, grepl("Dsum", term))
+filter(gel, grepl("^maxy", term))
+filter(gel, grepl("^peakt", term))
+filter(gel, grepl("mu\\.", term))
+filter(gel, grepl("sig", term))
+
+# Save state
+newinits <- initfind(jm_coda, OpenBUGS = FALSE)
+newinits[[1]]
+saved_state <- removevars(initsin = newinits, 
+                          variables = c(1:2, 5:8))
+saved_state[[1]]
+if(!dir.exists("models/01-test-Ricker/inits")) {
+  dir.create("models/01-test-Ricker/inits")
+}
+save(saved_state, file = "models/01-test-Ricker/inits/inits.Rdata") #for local
+
+# If converged, run and save replicated data
+jm_rep <- coda.samples(jm, variable.names = "et.rep",
+                       n.iter = 9000, thin = 3)
+
+save(jm_rep, file = "models/01-test-Ricker/coda/jm_rep.Rdata") #for local
