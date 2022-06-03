@@ -26,6 +26,14 @@ et2 %>%
   geom_hline(yintercept = 0) +
   theme_bw()
 
+ggplot(et2, aes(x = Days.relative.to.pulse + 1,
+           y = LRR)) +
+  geom_point(aes(color = as.factor(sID))) +
+  geom_hline(yintercept = 0) +
+  facet_wrap(~sID, scales = "free_y") +
+  theme_bw() +
+  guides(color = "none")
+
 # Prepare data list
 datlist <- list(et = et2$LRR,
                 t = et2$Days.relative.to.pulse + 1,
