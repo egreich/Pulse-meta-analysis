@@ -47,14 +47,15 @@ update(jm, 10000)
 # Run and monitor parameters
 # took out "a" and "b"
 params <- c("deviance", "Dsum",
-            "peakt", "maxy", "sig", 
-            "tau")
+            "peakt", "maxy",
+            "mu.peakt","mu.maxy",
+            "sig","tau")
 
 jm_coda <- coda.samples(jm, variable.names = params,
                         n.iter = 9000, thin = 3)
 
 # Plot output
-mcmcplot(jm_coda, parms = c("deviance", "Dsum", "peakt", "maxy", "sig", "tau"))
+mcmcplot(jm_coda, parms = c("deviance", "Dsum", "peakt", "maxy", "mu.peakt","mu.maxy", "sig", "tau"))
 
 ricker = function(x, a = 1, b = 1) {
   a * x * exp(-b * x)
