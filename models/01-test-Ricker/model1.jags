@@ -6,17 +6,29 @@ model{
     et.rep[i] ~ dnorm(mu[i], tau)
     
     # Mean model
-    # KO: This model, below, is highly non-linear and could lead to numerical errors or mixing issues.
-    #mu[i] <- a[sID[i]]*t[i]*exp(-b[sID[i]]*t[i])
     # KO: Here's an alternative that is reparameterized in terms of "meaningful" parameters and first
     # evaluated on the Log-scale:
-    Lmu[i] <- 1 - t[i]/exp(Lpeakt[sID[i]]) + Lmaxy[sID[i]] + Lpeakt[sID[i]] + log(t[i])
+    Lmu[i] <- 1 - t[i]/exp(Lpeakt[pID[i]]) + Lmaxy[pID[i]] + Lpeakt[pID[i]] + log(t[i])
+    
     # KO: exponential to "regular" scale:
     mu[i] <- exp(Lmu[i])
     
     # Square differences
     Sqdiff[i] <- pow(et[i] - et.rep[i], 2) 
   }
+  
+  # Hierarchical linear model for Lpeakt and Lmaxy
+  # Varies with pulse-level env variables
+  # With study random effect
+  
+  for(p in 1:Npulse) {
+      Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt)
+      Lmaxy[p] ~ dnorm(mu.lmaxy[p], tau.lmaxy)
+      
+      # Linear regression
+      mu.lpeakt[p] <- A[1] + A[2]*preVWC[p] + A[3]*pulse[p] + A[4]*MAP[p] + Eps.lpeakt[sID[p]]
+      mu.lmaxy[p] <- B[1] + B[2]*preVWC[p] + B[3]*pulse[p] + B[4]*MAP[p] + Eps.lmaxy[sID[p]]
+    }
   
   # Priors for Ricker model and variance
   for(s in 1:Nstudy){ # number of studies

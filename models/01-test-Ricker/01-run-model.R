@@ -14,9 +14,22 @@ library(postjags)
 # Load data
 load("models/01-test-Ricker/inputET.Rdata")
 
-# Convert study to factor/numeric
+
+# Create study_pulse combination, create integer sID
+
+pulse_table <- expand.grid(unique(et2$Study.ID),
+                           unique(et2$Pulse.ID)) %>%
+  rename(Study.ID = Var1,
+         Pulse.ID = Var2) %>%
+  mutate(sID = as.numeric(factor(Study.ID))) %>%
+  arrange(Study.ID) %>%
+  tibble::rownames_to_column() %>%
+  rename(pID = rowname)
+
+# Join with et2
 et2 <- et2 %>%
-  mutate(sID = as.numeric(factor(Study.ID)))
+  left_join(pulse_table) %>%
+  relocate(sID, pID)
 
 et2 %>%
   filter(sID %in% c(2, 4:5, 8:11, 15)) %>%
@@ -26,8 +39,13 @@ et2 %>%
   geom_hline(yintercept = 0) +
   theme_bw()
 
+
 ggplot(et2, aes(x = Days.relative.to.pulse + 1,
            y = LRR)) +
+  geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
+                 ymax = LRR + sqrt(poolVar),
+                 color = as.factor(sID)),
+                width = 0) +
   geom_point(aes(color = as.factor(sID))) +
   geom_hline(yintercept = 0) +
   facet_wrap(~sID, scales = "free_y") +
@@ -37,8 +55,10 @@ ggplot(et2, aes(x = Days.relative.to.pulse + 1,
 # Prepare data list
 datlist <- list(et = et2$LRR,
                 t = et2$Days.relative.to.pulse + 1,
-                sID = et2$sID,
+                pID = et2$pID,
+                sID = pulse_table$sID,
                 N = nrow(et2),
+                Npulse = nrow(pulse_table),
                 Nstudy = max(et2$sID))
 
 # Initial values: manual specification to get model started
