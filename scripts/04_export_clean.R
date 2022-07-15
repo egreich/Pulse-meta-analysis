@@ -8,7 +8,7 @@ library(ggplot2)
 # Read in data
 d <- read_csv("./data_clean/Clean_record_info.csv")
 
-#### Select ET (evapotranspiration) ####
+##### Select ET (evapotranspiration) #####
 et <- d %>%
   filter(varType == "ET") %>%
   # Fix an Excel typo in Units, label unitDuration, convert to Days since pulse
@@ -54,6 +54,20 @@ et2 %>%
              y = LRR, 
              color = Study.ID)) +
   geom_point()
+
+
+##### Create pulse-level table of covariates #####
+pulse <- d %>%
+  filter(varType == "SWC",
+         Study.ID %in% et2$Study.ID) 
+
+length(unique(pulse$Study.ID))
+
+pulse %>%
+  group_by(Study.ID, Pulse.ID) %>%
+  summarize(n = n())
+# only 4 sites, 19 pulses with SWC data
+
 
 # Save to models/01-test-Ricker
 save(et2, file = "models/01-test-Ricker/inputET.Rdata")
