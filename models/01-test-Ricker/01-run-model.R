@@ -3,10 +3,10 @@
 if(!"postjags" %in% installed.packages()) {
   devtools::install_github("fellmk/PostJAGS/postjags")
 }
-
+library(dplyr)
+library(tidyr)
 library(rjags)
 load.module('dic')
-library(dplyr)
 library(ggplot2)
 library(mcmcplots)
 library(postjags)
@@ -17,20 +17,20 @@ load("models/01-test-Ricker/inputET.Rdata")
 
 # Create study_pulse combination, create integer sID
 
-pulse_table <- expand.grid(unique(et2$Study.ID),
-                           unique(et2$Pulse.ID)) %>%
-  rename(Study.ID = Var1,
-         Pulse.ID = Var2) %>%
+pulse_table <- et2 %>%
+  expand(nesting(Study.ID, Pulse.ID)) %>%
   mutate(sID = as.numeric(factor(Study.ID))) %>%
   arrange(Study.ID) %>%
   tibble::rownames_to_column() %>%
-  rename(pID = rowname)
+  rename(pID = rowname) %>%
+  mutate(pID = as.numeric(pID))
 
 # Join with et2
 et2 <- et2 %>%
   left_join(pulse_table) %>%
   relocate(sID, pID)
 
+# Plot
 et2 %>%
   filter(sID %in% c(2, 4:5, 8:11, 15)) %>%
   ggplot(aes(x = Days.relative.to.pulse + 1,
@@ -38,7 +38,6 @@ et2 %>%
   geom_point(aes(color = as.factor(sID))) +
   geom_hline(yintercept = 0) +
   theme_bw()
-
 
 ggplot(et2, aes(x = Days.relative.to.pulse + 1,
            y = LRR)) +
@@ -52,22 +51,39 @@ ggplot(et2, aes(x = Days.relative.to.pulse + 1,
   theme_bw() +
   guides(color = "none")
 
+# Prepare pulse vars (nrow = nrow(pulse_table))
+pulse_vars <- et2 %>%
+  group_by(pID) %>%
+  summarize(MAP = unique(MAP.mm),
+            pulse_amount = unique(Pulse.amount))
+
+sum(!is.na(pulse_vars$MAP)) # 15
+sum(!is.na(pulse_vars$pulse_amount)) # 28
+
 # Prepare data list
 datlist <- list(et = et2$LRR,
                 t = et2$Days.relative.to.pulse + 1,
                 pID = et2$pID,
                 sID = pulse_table$sID,
-                N = nrow(et2),
+                Nobs = nrow(et2),
                 Npulse = nrow(pulse_table),
-                Nstudy = max(et2$sID))
+                Nparam = 4,
+                preSWC = ,
+                pulse_amount =,
+                MAP = ,
+                Nstudy = max(pulse_table$sID),
+                Slpeakt = 2,
+                Slmaxy = 2)
 
 # Initial values: manual specification to get model started
 inits <- function(){
-  list(mu.Lpeakt = rnorm(1, 0, 10),
-       mu.Lmaxy = rnorm(1, 0, 10),
-       sig.Lpeakt = runif(1, 0, 10),
-       sig.Lmaxy = runif(1, 0, 10),
-       tau = runif(1, 0, 1))
+  list(A = rnorm(datlist$Nparam, 0, 10),
+       B = rnorm(datlist$Nparam, 0, 10),
+       tau.Eps.lpeakt = runif(1, 0, 10),
+       tau.Eps.lmaxy = runif(1, 0, 10),
+       sig.lpeakt = runif(1, 0, 10),
+       sig.lmaxy = runif(1, 0, 10),
+       tau = runif(1, 0, 3))
 }
 initslist <- list(inits(), inits(), inits())
 
@@ -77,7 +93,7 @@ load("models/01-test-Ricker/inits/inits.Rdata")
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/model1.jags",
                  data = datlist,
-                 inits = saved_state[[2]], # initslist
+                 inits = initslist,
                  n.chains = 3)
 
 update(jm, 10000)
