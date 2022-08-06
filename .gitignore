@@ -14,3 +14,6 @@ plots/
 # Suppress data files and rsconnect folder in pulse_app
 pulse_app/*.Rdata
 pulse_app/rsconnect/
+
+# Suppress extraction folders
+extractions/
