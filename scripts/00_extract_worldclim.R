@@ -10,22 +10,35 @@ library(dplyr)
 # WorldClim 2: new 1km spatial resolution climate surfaces for global land areas. 
 # International Journal of Climatology 37 (12): 4302-4315.
 
-tavg_fn <- list.files("data_raw/wc2.1_30s_tavg/",
-                      full.names = TRUE)
-tavg_stack <- stack(tavg_fn)
-str(tavg_stack)
-names(tavg_stack)
 
+# Elevation raster, single not stacked
+elev <- raster("data_raw/wc2.1_30s_elev/wc2.1_30s_elev.tif")
 
-prec_fn <- list.files("data_raw/wc2.1_30s_prec/",
-                      full.names = TRUE)
-prec_stack <- stack(prec_fn)
-names(prec_stack)
+# Bioclimatic rasters, single not stacked
+# BIO1 = Annual Mean Temperature
+# BIO12 = Annual Precipitation
 
-vapr_fn <- list.files("data_raw/wc2.1_30s_vapr/",
-                      full.names = TRUE)
-vapr_stack <- stack(vapr_fn)
-names(vapr_stack)
+MAT <- raster("data_raw/wc2.1_30s_bio/wc2.1_30s_bio_1.tif")
+MAP <- raster("data_raw/wc2.1_30s_bio/wc2.1_30s_bio_12.tif")
+
+# # T in C
+# tavg_fn <- list.files("data_raw/wc2.1_30s_tavg/",
+#                       full.names = TRUE)
+# tavg_stack <- stack(tavg_fn)
+# str(tavg_stack)
+# names(tavg_stack)
+# 
+# # Precip in mm
+# prec_fn <- list.files("data_raw/wc2.1_30s_prec/",
+#                       full.names = TRUE)
+# prec_stack <- stack(prec_fn)
+# names(prec_stack)
+# 
+# # Water vapor pressure in kPa
+# vapr_fn <- list.files("data_raw/wc2.1_30s_vapr/",
+#                       full.names = TRUE)
+# vapr_stack <- stack(vapr_fn)
+# names(vapr_stack)
 
 
 # Load meta-analysis sites
@@ -38,32 +51,35 @@ latlons <- read.csv("./data_raw/Combined_study-source_info.csv",
           lon = Longitude) %>%
   relocate(Study.ID, lon, lat) %>% # need to give in x, y
   as_tibble() %>%
-  column_to_rownames(var = "Study.ID")
+  tibble::column_to_rownames(var = "Study.ID")
   
 # Extract 
-tavg.data <- extract(tavg_stack, latlons)
-prec.data <- extract(prec_stack, latlons)
-vapr.data <- extract(vapr_stack, latlons)
+elev.data <- extract(elev, latlons)
+MAT.data <- extract(MAT, latlons)
+MAP.data <- extract(MAP, latlons)
+# tavg.data <- extract(tavg_stack, latlons)
+# prec.data <- extract(prec_stack, latlons)
+# vapr.data <- extract(vapr_stack, latlons)
 
 
-# Summarize to annual
-tavg <- rowMeans(tavg.data) # Mean across all months
-prec <- rowSums(prec.data) # Sum across all months
+# # Summarize to annual
+# tavg <- rowMeans(tavg.data) # Mean across all months
+# prec <- rowSums(prec.data) # Sum across all months
+# 
+# temp <- matrix(NA, nrow = nrow(vapr.data), ncol = 2)
+# for(i in 1:nrow(vapr.data)) {
+#   month <- which.max(vapr.data[i,])
+#   vpd <- vapr.data[i, month]
+#   temp[i, ] <- c(month, vpd)
+# } # VPD of driest month
 
-temp <- matrix(NA, nrow = nrow(vapr.data), ncol = 2)
-for(i in 1:nrow(vapr.data)) {
-  month <- which.max(vapr.data[i,])
-  vpd <- vapr.data[i, month]
-  temp[i, ] <- c(month, vpd)
-} # VPD of driest month
+out.df <- data.frame(MAT = MAT.data,
+                   MAP = MAP.data,
+                   elev = elev.data)
 
-out1 <- data.frame(MAT = tavg,
-                   MAP = prec,
-                   Dmax = temp[,2],
-                   Dmax_month = temp[,1])
+out <- cbind.data.frame(latlons, out.df) %>%
+  tibble::rownames_to_column(var = "Study.ID")
 
-out <- cbind.data.frame(latlons, out1)
-
-
-plot(out$MAT, out$MAP)
-plot(out$Dmax, out$MAP)
+# Save out to data_clean/
+write.csv(out, file = "data_clean/worldclim_vars.csv",
+          row.names = FALSE)
