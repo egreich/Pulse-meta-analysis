@@ -38,6 +38,19 @@ d_study <- dataIN_study %>%
 
 d_study <- d_study[rowSums(is.na(d_study)) != ncol(d_study), ] # remove extra rows
 
+##### Join WorldClim variables to study table #####
+wc <- read.csv("data_clean/worldclim_vars.csv") %>%
+  select(-lat, -lon) %>%
+  rename(MAP.mm.wc = MAP,
+         MAT.C.wc = MAT,
+         elev.m.wc = elev)
+
+d_study <- left_join(d_study, wc,
+                     by = "Study.ID")
+
+# Good congruence between gridded and local data, except for
+# Loik et al., more than 1000 m of difference in elevation
+
 ##### Clean pulse table, join with study table #####
 d_pulse <- dataIN_pulse %>%
   rename(percent.C4 = X.C4,
