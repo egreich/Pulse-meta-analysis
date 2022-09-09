@@ -7,10 +7,15 @@
 Pulse-meta-analysis.Rproj
 
 # Suppress folders
-data_clean/
+data_clean/*.csv
+data_clean/tables/*.csv
 data_raw/
 plots/
+!data_clean/worldclim_vars.csv
 
 # Suppress data files and rsconnect folder in pulse_app
 pulse_app/*.Rdata
 pulse_app/rsconnect/
+
+# Suppress extraction folders
+extractions/
