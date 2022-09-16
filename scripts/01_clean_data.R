@@ -6,10 +6,9 @@
 library(tidyverse)
 library(lubridate)
 
-
 # Import data
 dataIN_study = read.csv("./data_raw/Combined_study-source_info.csv", 
-                        header = TRUE, skip = 1,
+                        header = TRUE, skip = 1, fileEncoding="latin1", # this makes it so some special characters are not read
                         na.strings = "")
 dataIN_pulse = read.csv("./data_raw/Combined_pulse-plot_info.csv", 
                         header = TRUE, skip = 1,
@@ -57,6 +56,12 @@ d_pulse <- dataIN_pulse %>%
          Plant.biomass.cover.LAI = Plant.biomass..cover.LAI)
 
 d_pulse <- d_pulse[rowSums(is.na(d_pulse)) != ncol(d_pulse), ] # remove extra rows
+
+# Convert all pulse units to mm
+d_pulse <- d_pulse %>%
+  mutate(Pulse.amount.mm = case_when(Pulse.unit == "cm" ~ Pulse.amount*10,
+                                     Pulse.unit == "mm h-1" ~ Pulse.amount*Duration.of.pulse/60,
+                                     Pulse.unit == "mm" ~ Pulse.amount)) # duration is in minutes (for now)
 
 # Split into two tables w/o overlapping study IDs
 for(i in 1:nrow(d_pulse)){
