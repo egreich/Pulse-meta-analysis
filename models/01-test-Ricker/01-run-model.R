@@ -54,11 +54,11 @@ ggplot(et2, aes(x = Days.relative.to.pulse + 1,
 # Prepare pulse vars (nrow = nrow(pulse_table))
 pulse_vars <- et2 %>%
   group_by(pID) %>%
-  summarize(MAP = unique(MAP.mm),
+  summarize(MAP = unique(MAP.mm.wc),
             pulse_amount = unique(Pulse.amount))
 
-sum(!is.na(pulse_vars$MAP)) # 15
-sum(!is.na(pulse_vars$pulse_amount)) # 28
+#sum(!is.na(pulse_vars$MAP))
+#sum(!is.na(pulse_vars$pulse_amount))
 
 # Prepare data list
 datlist <- list(et = et2$LRR,
@@ -69,8 +69,8 @@ datlist <- list(et = et2$LRR,
                 Npulse = nrow(pulse_table),
                 Nparam = 4,
                 preSWC = ,
-                pulse_amount =,
-                MAP = ,
+                pulse_amount =et2$Pulse.amount,
+                MAP = et2$MAP.mm.wc,
                 Nstudy = max(pulse_table$sID),
                 Slpeakt = 2,
                 Slmaxy = 2)

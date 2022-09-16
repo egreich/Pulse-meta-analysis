@@ -1,5 +1,5 @@
 # Plot model output
-
+install.packages("broom.mixed")
 library(coda)
 library(broom.mixed)
 library(dplyr)
