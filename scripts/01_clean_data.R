@@ -8,7 +8,7 @@ library(lubridate)
 
 # Import data
 dataIN_study = read.csv("./data_raw/Combined_study-source_info.csv", 
-                        header = TRUE, skip = 1, fileEncoding="latin1", # this makes it so some special characters are not read
+                        header = TRUE, skip = 1, 
                         na.strings = "")
 dataIN_pulse = read.csv("./data_raw/Combined_pulse-plot_info.csv", 
                         header = TRUE, skip = 1,
@@ -35,8 +35,6 @@ d_study <- dataIN_study %>%
                                   Vegetation.type)) %>%
   relocate(Paper.ID)
 
-d_study <- d_study[rowSums(is.na(d_study)) != ncol(d_study), ] # remove extra rows
-
 ##### Join WorldClim variables to study table #####
 wc <- read.csv("data_clean/worldclim_vars.csv") %>%
   select(-lat, -lon) %>%
@@ -54,8 +52,6 @@ d_study <- left_join(d_study, wc,
 d_pulse <- dataIN_pulse %>%
   rename(percent.C4 = X.C4,
          Plant.biomass.cover.LAI = Plant.biomass..cover.LAI)
-
-d_pulse <- d_pulse[rowSums(is.na(d_pulse)) != ncol(d_pulse), ] # remove extra rows
 
 # Convert all pulse units to mm
 d_pulse <- d_pulse %>%
