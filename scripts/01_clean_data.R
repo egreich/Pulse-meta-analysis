@@ -8,14 +8,14 @@ library(lubridate)
 
 # Import data
 dataIN_study = read.csv("./data_raw/Combined_study-source_info.csv", 
-                        header = TRUE, skip = 1, fileEncoding="latin1", # this makes it so some special characters are not read
+                        header = TRUE, skip = 1, 
                         na.strings = "")
 dataIN_pulse = read.csv("./data_raw/Combined_pulse-plot_info.csv", 
                         header = TRUE, skip = 1,
                         na.strings = "")
 dataIN_record = read.csv("./data_raw/Combined_record_info.csv", 
                          header = TRUE, skip = 1,
-                         na.strings = "")[,1:17] # Remove extraneous empty columns
+                         na.strings = c("", NA))[,1:17] # Remove extraneous empty columns
 
 ##### Clean study table #####
 d_study <- dataIN_study %>%
@@ -35,8 +35,6 @@ d_study <- dataIN_study %>%
                                   Vegetation.type)) %>%
   relocate(Paper.ID)
 
-d_study <- d_study[rowSums(is.na(d_study)) != ncol(d_study), ] # remove extra rows
-
 ##### Join WorldClim variables to study table #####
 wc <- read.csv("data_clean/worldclim_vars.csv") %>%
   select(-lat, -lon) %>%
@@ -54,8 +52,6 @@ d_study <- left_join(d_study, wc,
 d_pulse <- dataIN_pulse %>%
   rename(percent.C4 = X.C4,
          Plant.biomass.cover.LAI = Plant.biomass..cover.LAI)
-
-d_pulse <- d_pulse[rowSums(is.na(d_pulse)) != ncol(d_pulse), ] # remove extra rows
 
 # Convert all pulse units to mm
 d_pulse <- d_pulse %>%
@@ -142,9 +138,7 @@ d_record <- dataIN_record %>%
 
 # Join d_record with combined pulse table
 d_all <- d_record %>%
-  left_join(d_pulse, by = c("Study.ID", "Pulse.ID")) %>%
-  mutate(Mean = as.numeric(Mean),
-         SD = as.numeric(SD))
+  left_join(d_pulse, by = c("Study.ID", "Pulse.ID"))
 
 
 # Create folder for cleaned data if it does not already exist
@@ -156,5 +150,3 @@ write.csv(d_all, file = "data_clean/Clean_record_info.csv",
 
 # Save as .Rdata in pulse_app/
 save(d_all, file = "pulse_app/d_all.Rdata")
-
-

@@ -11,12 +11,8 @@ d <- read_csv("./data_clean/Clean_record_info.csv")
 ##### Select ET (evapotranspiration) #####
 et <- d %>%
   filter(varType == "ET") %>%
-  # Fix an Excel typo in Units, label unitDuration, convert to Days since pulse
-  mutate(Units = case_when(grepl("^mm$", Units, ) ~ "mm",# to avoid some units turning to NA when they shouldn't
-                           grepl("mm day-", Units) ~ "mm day-1",
-                           grepl("mmol m-2 sec-1", Units) ~ "mmol m-2 sec-1",
-                           grepl("mmol m-2 d-1", Units) ~ "mmol m-2 d-1"),
-         unitDuration = case_when(grepl("mm day-1", Units) ~ "integrated",
+  # label unitDuration, convert to Days since pulse
+  mutate(unitDuration = case_when(grepl("^mm day-1$", Units) ~ "integrated",
                                   grepl("mmol m-2 sec-1", Units) ~ "instantaneous",
                                   grepl("mmol m-2 d-1", Units) ~ "integrated"),
          Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
@@ -38,7 +34,7 @@ et_pulse <- et %>%
             controlMean = Mean[which.min(Days.relative.to.pulse)],
             controlSD = SD[which.min(Days.relative.to.pulse)])
 
-# Merge et_pulse back to ET
+#### Merge et_pulse back to ET ####
 # Calculate LRR for each day
 et2 <- et %>%
   left_join(et_pulse, by = c("Study.ID", "Pulse.ID", "Source.file.name")) %>%
@@ -62,20 +58,15 @@ pulse <- d %>%
 length(unique(pulse$Study.ID))
 
 pulse %>%
-  group_by(Study.ID, Pulse.ID) %>%
+  group_by(Study.ID)%>%
   summarize(n = n())
-# only 4 sites, 19 pulses with SWC data -> 3 sites after more data cleaning
+pulse %>%
+  group_by(Study.ID, Pulse.ID)%>%
+  summarize(n = n())
+# 3 sites, 19 pulses with both ET and SWC 
 
 
-# Merge et_pulse back to ET
-# Calculate LRR for each day
-et2 <- et %>%
-  left_join(et_swc, by = c("Study.ID", "Pulse.ID", "Source.file.name")) %>%
-  mutate(LRR = log(Mean/controlMean),
-         poolVar = case_when(SD.type == "SD" ~ ((SD^2 + controlSD^2)/(2*N)*(1/Mean^2 + 1/controlMean^2)),
-                             SD.type == "SE" ~ ((SD^2 + controlSD^2)/2*(1/Mean^2 + 1/controlMean^2))))
-
-#### Create a pre-SWC as a new column
+#### Create a pre-SWC as a new column ####
 
 # Check unique units and depths by SWC type
 d %>%
@@ -93,7 +84,8 @@ et_swc <- d %>%
   summarize(initialDay.swc = min(Days.relative.to.pulse),
             preSWC = Mean[which.min(Days.relative.to.pulse)],
             preSWC.SD = SD[which.min(Days.relative.to.pulse)]) %>%
-  rename(SWCunit = Units, SWCtype = varType)
+  rename(SWCunit = Units, SWCtype = varType) %>%
+  ungroup()
 
 et3 <- et2 %>%
   left_join(et_swc, by = c("Study.ID", "Pulse.ID", "Source.file.name"))
