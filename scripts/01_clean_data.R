@@ -15,7 +15,7 @@ dataIN_pulse = read.csv("./data_raw/Combined_pulse-plot_info.csv",
                         na.strings = "")
 dataIN_record = read.csv("./data_raw/Combined_record_info.csv", 
                          header = TRUE, skip = 1,
-                         na.strings = "")[,1:17] # Remove extraneous empty columns
+                         na.strings = c("", NA))[,1:17] # Remove extraneous empty columns
 
 ##### Clean study table #####
 d_study <- dataIN_study %>%
@@ -142,9 +142,7 @@ d_record <- dataIN_record %>%
 
 # Join d_record with combined pulse table
 d_all <- d_record %>%
-  left_join(d_pulse, by = c("Study.ID", "Pulse.ID")) %>%
-  mutate(Mean = as.numeric(Mean),
-         SD = as.numeric(SD))
+  left_join(d_pulse, by = c("Study.ID", "Pulse.ID"))
 
 
 # Create folder for cleaned data if it does not already exist
@@ -156,5 +154,3 @@ write.csv(d_all, file = "data_clean/Clean_record_info.csv",
 
 # Save as .Rdata in pulse_app/
 save(d_all, file = "pulse_app/d_all.Rdata")
-
-
