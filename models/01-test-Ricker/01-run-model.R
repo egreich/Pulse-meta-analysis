@@ -12,34 +12,34 @@ library(mcmcplots)
 library(postjags)
 
 # Load data
-load("models/01-test-Ricker/inputET.Rdata")
+load("models/01-test-Ricker/inputET.Rdata") # et3
 
 
 # Create study_pulse combination, create integer sID
 
-pulse_table <- et2 %>%
+pulse_table <- et3 %>%
   expand(nesting(Study.ID, Pulse.ID)) %>%
   mutate(sID = as.numeric(factor(Study.ID))) %>%
   arrange(Study.ID) %>%
   tibble::rownames_to_column() %>%
   rename(pID = rowname) %>%
-  mutate(pID = as.numeric(pID))
+  mutate(pID = as.numeric(pID)) %>%
+  relocate(pID, .after = sID)
 
 # Join with et2
-et2 <- et2 %>%
+et3 <- et3 %>%
   left_join(pulse_table) %>%
   relocate(sID, pID)
 
 # Plot
-et2 %>%
-  filter(sID %in% c(2, 4:5, 8:11, 15)) %>%
+et3 %>%
   ggplot(aes(x = Days.relative.to.pulse + 1,
              y = LRR)) +
   geom_point(aes(color = as.factor(sID))) +
   geom_hline(yintercept = 0) +
   theme_bw()
 
-ggplot(et2, aes(x = Days.relative.to.pulse + 1,
+ggplot(et3, aes(x = Days.relative.to.pulse + 1,
            y = LRR)) +
   geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
                  ymax = LRR + sqrt(poolVar),
@@ -52,25 +52,30 @@ ggplot(et2, aes(x = Days.relative.to.pulse + 1,
   guides(color = "none")
 
 # Prepare pulse vars (nrow = nrow(pulse_table))
-pulse_vars <- et2 %>%
-  group_by(pID) %>%
+pulse_vars <- et3 %>%
+  group_by(sID, pID) %>%
   summarize(MAP = unique(MAP.mm.wc),
-            pulse_amount = unique(Pulse.amount))
+            pulse_amount = unique(Pulse.amount),
+            preSWC = unique(preSWC),
+            SWCunit = unique(SWCunit), # cm and mm
+            SWCtype = factor(unique(SWCtype), levels = c("soil water content volumetric",
+                                                         "soil water content unknown")),
+            SWCtype = as.integer(SWCtype)) # needs to be in two steps
 
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
 
 # Prepare data list
-datlist <- list(et = et2$LRR,
-                t = et2$Days.relative.to.pulse + 1,
-                pID = et2$pID,
+datlist <- list(et = et3$LRR,
+                t = et3$Days.relative.to.pulse + 1,
+                pID = et3$pID,
                 sID = pulse_table$sID,
-                Nobs = nrow(et2),
+                Nobs = nrow(et3),
                 Npulse = nrow(pulse_table),
                 Nparam = 4,
-                preSWC = ,
-                pulse_amount =et2$Pulse.amount,
-                MAP = et2$MAP.mm.wc,
+                preSWC = pulse_vars$preSWC,
+                pulse_amount =pulse_vars$pulse_amount,
+                MAP = pulse_vars$MAP,
                 Nstudy = max(pulse_table$sID),
                 Slpeakt = 2,
                 Slmaxy = 2)
