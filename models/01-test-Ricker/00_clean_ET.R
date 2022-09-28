@@ -93,3 +93,4 @@ et3 <- et2 %>%
 
 # Save to models/01-test-Ricker
 save(et3, file = "models/01-test-Ricker/inputET.Rdata")
+

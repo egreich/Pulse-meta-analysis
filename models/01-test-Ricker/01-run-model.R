@@ -58,9 +58,10 @@ pulse_vars <- et3 %>%
             pulse_amount = unique(Pulse.amount),
             preSWC = unique(preSWC),
             SWCunit = unique(SWCunit), # cm and mm
-            SWCtype = factor(unique(SWCtype), levels = c("soil water content volumetric",
-                                                         "soil water content unknown")),
-            SWCtype = as.integer(SWCtype)) # needs to be in two steps
+            SWCtype = factor(unique(SWCtype), levels = c("soil water content unknown",
+                                                         "soil water content volumetric")),
+            SWCtype = as.integer(SWCtype)) %>% # needs to be in two steps
+  mutate(SWCtype = ifelse(is.na(SWCtype), 3, SWCtype)) # set SWC to 3 when NA
 
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
@@ -74,6 +75,7 @@ datlist <- list(et = et3$LRR,
                 Npulse = nrow(pulse_table),
                 Nparam = 4,
                 preSWC = pulse_vars$preSWC,
+                SWCtype = pulse_vars$SWCtype,
                 pulse_amount =pulse_vars$pulse_amount,
                 MAP = pulse_vars$MAP,
                 Nstudy = max(pulse_table$sID),
@@ -93,10 +95,10 @@ inits <- function(){
 initslist <- list(inits(), inits(), inits())
 
 # Initial values: from saved state
-load("models/01-test-Ricker/inits/inits.Rdata")
+#load("models/01-test-Ricker/inits/inits.Rdata")
 
 # Initialize JAGS model
-jm <- jags.model("models/01-test-Ricker/model1.jags",
+jm <- jags.model("models/01-test-Ricker/model2.R",
                  data = datlist,
                  inits = initslist,
                  n.chains = 3)
@@ -139,10 +141,31 @@ filter(gel, grepl("mu\\.", term))
 filter(gel, grepl("sig", term))
 
 # Save state
+
+# inits to save
+init_names = c("A","B","tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.lpeakt", "sig.lmaxy", "tau")
+
+# function that finds the index of variables to remove
+get_remove_index <- function(to_keep, list){
+  out_list <- c()
+  for(j in c(1:length(list))){
+    if(list[j] %in% to_keep){
+      out_list[j] = NA
+    } else{
+      out_list[j] = j
+    }
+  }
+  out_list <- out_list[!is.na(out_list)]
+  out_list
+}
+
+# use get_remove_index function to find which variables to remove
+remove_vars = get_remove_index(init_names, params)
+
 newinits <- initfind(jm_coda, OpenBUGS = FALSE)
 newinits[[1]]
 saved_state <- removevars(initsin = newinits, 
-                          variables = c(1:2, 5:8))
+                          variables = remove_vars)
 saved_state[[1]]
 if(!dir.exists("models/01-test-Ricker/inits")) {
   dir.create("models/01-test-Ricker/inits")
