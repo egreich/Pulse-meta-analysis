@@ -68,7 +68,7 @@ pulse_vars <- et3 %>%
 
 # Prepare data list
 datlist <- list(et = et3$LRR,
-                t = et3$Days.relative.to.pulse + 1,
+                t = et3$Days.relative.to.pulse + 2,
                 pID = et3$pID,
                 sID = pulse_table$sID,
                 Nobs = nrow(et3),

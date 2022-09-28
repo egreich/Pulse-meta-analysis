@@ -23,7 +23,7 @@ model{
   # With study random effect
   
   for(p in 1:Npulse) {
-    Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt)
+    Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt) #NOTE- needs better constraint
     Lmaxy[p] ~ dnorm(mu.lmaxy[p], tau.lmaxy)
     
     # Linear regression
