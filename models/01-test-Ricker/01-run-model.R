@@ -66,9 +66,12 @@ pulse_vars <- et3 %>%
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
 
+# Get rid of pre-pulse data in et3 table to anchor at 0
+et3 <- et3[et3$Days.relative.to.pulse != -1,] 
+
 # Prepare data list
 datlist <- list(et = et3$LRR,
-                t = et3$Days.relative.to.pulse + 2,
+                t = et3$Days.relative.to.pulse + 1,
                 pID = et3$pID,
                 sID = pulse_table$sID,
                 Nobs = nrow(et3),
@@ -76,8 +79,8 @@ datlist <- list(et = et3$LRR,
                 Nparam = 4,
                 preSWC = pulse_vars$preSWC,
                 SWCtype = pulse_vars$SWCtype,
-                pulse_amount =pulse_vars$pulse_amount,
-                MAP = pulse_vars$MAP,
+                pulse_amount = (pulse_vars$pulse_amount - mean(pulse_vars$pulse_amount))/sd(pulse_vars$pulse_amount),
+                MAP = (pulse_vars$MAP - mean(pulse_vars$MAP))/sd(pulse_vars$MAP),
                 Nstudy = max(pulse_table$sID),
                 Slpeakt = 2,
                 Slmaxy = 2)
