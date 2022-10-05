@@ -150,3 +150,4 @@ write.csv(d_all, file = "data_clean/Clean_record_info.csv",
 
 # Save as .Rdata in pulse_app/
 save(d_all, file = "pulse_app/d_all.Rdata")
+
