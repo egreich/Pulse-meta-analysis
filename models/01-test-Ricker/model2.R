@@ -1,3 +1,11 @@
+
+# data{
+#   for(p in 1:Npulse){
+#     SWCtype[p] <- SWCtype[p] - 1
+#   }
+# }
+
+
 model{
   
   for(i in 1:Nobs){ # number of observations
@@ -23,53 +31,48 @@ model{
   # With study random effect
   
   for(p in 1:Npulse) {
-    Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt) #NOTE- needs better constraint
+    Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt)
     Lmaxy[p] ~ dnorm(mu.lmaxy[p], tau.lmaxy)
     
     # Linear regression
-    mu.lpeakt[p] <- A[1] + A[2]*U[SWCtype[p]]*preSWC.scaled[p]+ A[3]*pulse_amount[p] + A[4]*MAP[p] + Eps.lpeakt[sID[p]]
-    # A[2] -> effect when volumetric
+    mu.lpeakt[p] <- A[1] + A[2]*U[SWCtype[p] + 1]*preSWC.scaled[p]+ A[3]*pulse_amount[p] + A[4]*MAP[p] + Eps.lpeakt[sID[p]]
+    mu.lmaxy[p] <- B[1] + B[2]*U[SWCtype[p] + 1]*preSWC.scaled[p] + B[3]*pulse_amount[p] + B[4]*MAP[p] + Eps.lmaxy[sID[p]]
+    # A[2], B[2] -> effect when volumetric
     # U[k] -> multiplicative effect when unknown
-    # SWCtype[p] = 1 if unknown; = 2 if v/v; = 3 if NA; = 4 if gravimetric (no gravimetric in this dataset)
+    # SWCtype[p] = 1 if volumetric; = 2 if unknown; = 3 if gravimetric (no gravimetric in this dataset)
     
-    # missing SWCtype
-    SWCtype[p] ~ dcat(c(pp, .3, .3)) # use SWCtype.temp[p] ~dbern(pp) if 2, dcat if 3, # just using .3 to test
+  
+    
+    # Model for missing SWCtype
+    # pp is prob SWC.type = 2
+    # Assigns 1 or 2 to NAs
+    SWCtype[p] ~ dbern(pp) # use SWCtype.temp[p] ~dbern(pp) if 2, dcat if 3
     #SWCtype[p] <- SWCtype.temp[p] +1 # for dbern
     
-    # Fix this to match the form of mu.lpeakt
-    mu.lmaxy[p] <- B[1] + B[2]*U[SWCtype[p]]*preSWC.scaled[p] + B[3]*pulse_amount[p] + B[4]*MAP[p] + Eps.lmaxy[sID[p]]
+    # Model for missing preSWC
+    preSWC[p] ~ dbeta(a.swc[SWCtype[p] + 1], b.swc[SWCtype[p] + 1])
     
     # Scale SWC
-    preSWC.scaled[p] <- (preSWC[p] - mean.SWC[SWCtype[p]])/sd.SWC[SWCtype[p]]
-    
-    # pulse[p] ~ dlnorm(mu.pulse, tau.pulse) No missing pulse amounts
-    preSWC[p] ~ dcat(c(a.swc[SWCtype[p]], b.swc[SWCtype[p]], c.swc[SWCtype[p]]))
-    # if plot of preSWC vs MAP show "strong" relationship: (No, plus units problem comparing across SWC types)
-    #preSWC[p] ~ dlnorm(mu.swc[p], tau.swc)
-    #mu.swc[p] <- a.swc + b.swc*MAP[p]
+    preSWC.scaled[p] <- (preSWC[p] - mean.SWC[SWCtype[p] + 1])/sd.SWC[SWCtype[p] + 1]
   }
   
   
   # Prior for missing data parameters
   # pp is prob of SWCtype = 2
   pp ~ dunif(0,1)
-  # if only 2 SWC types, tt from 1:2
-  for(tt in 1:3){
+  # for each soil type:
+  for(tt in 1:NSWCtype){
     a.swc[tt] ~ dunif(1,100)
     b.swc[tt] ~ dunif(1,100)
-    c.swc[tt] ~ dunif(1,100)
-    
     
     # Mean and SD for scaled preSWC
     mean.SWC[tt] <- mean(preSWC[])
     sd.SWC[tt]<- sd(preSWC[])
     }
   
-  U[1] ~ dunif(0,100)
-  #comment out U[3] if only 2 levels
-  U[3] ~ dunif(0,100)
-  # If v/v is coded as "2", set U[2] =1
-  U[2] <- 1
+  # Priors for multiplicative effect of SWC type
+  U[1] ~ dunif(.99,1.01) # v/v is coded as "1"
+  U[2] ~ dunif(0,100) # unknown is coded as "2"
   
   # Priors for linear model 
   for(j in 1:Nparam){ # number of linear regression parameters
