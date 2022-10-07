@@ -58,10 +58,9 @@ pulse_vars <- et3 %>%
             pulse_amount = unique(Pulse.amount),
             preSWC = unique(preSWC),
             SWCunit = unique(SWCunit), # cm and mm
-            SWCtype = factor(unique(SWCtype), levels = c("soil water content unknown",
-                                                         "soil water content volumetric")),
-            SWCtype = as.integer(SWCtype)) %>% # needs to be in two steps
-  mutate(SWCtype = ifelse(is.na(SWCtype), 3, SWCtype)) # set SWC to 3 when NA
+            SWCtype = factor(unique(SWCtype), levels = c("soil water content volumetric",
+                                                         "soil water content unknown")),
+            SWCtype = as.numeric(SWCtype) - 1) # needs to be in two steps
 
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
@@ -77,10 +76,11 @@ datlist <- list(et = et3$LRR,
                 Nobs = nrow(et3),
                 Npulse = nrow(pulse_table),
                 Nparam = 4,
+                NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
                 preSWC = pulse_vars$preSWC,
                 SWCtype = pulse_vars$SWCtype,
-                pulse_amount = (pulse_vars$pulse_amount - mean(pulse_vars$pulse_amount))/sd(pulse_vars$pulse_amount),
-                MAP = (pulse_vars$MAP - mean(pulse_vars$MAP))/sd(pulse_vars$MAP),
+                pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
+                MAP = as.vector(scale(pulse_vars$MAP)),
                 Nstudy = max(pulse_table$sID),
                 Slpeakt = 2,
                 Slmaxy = 2)
@@ -89,6 +89,10 @@ datlist <- list(et = et3$LRR,
 inits <- function(){
   list(A = rnorm(datlist$Nparam, 0, 10),
        B = rnorm(datlist$Nparam, 0, 10),
+       pp = runif(1, 0, 1),
+       a.swc = runif(datlist$NSWCtype, 0, 100),
+       b.swc = runif(datlist$NSWCtype, 0, 100),
+       U = c(1, runif(1, 0, 100)),
        tau.Eps.lpeakt = runif(1, 0, 10),
        tau.Eps.lmaxy = runif(1, 0, 10),
        sig.lpeakt = runif(1, 0, 10),
