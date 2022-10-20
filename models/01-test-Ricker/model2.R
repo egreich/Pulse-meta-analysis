@@ -31,7 +31,8 @@ model{
   # With study random effect
   
   for(p in 1:Npulse) {
-    Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt)
+    #Lpeakt[p] ~ dnorm(mu.lpeakt[p], tau.lpeakt)T(-10,10)
+    Lpeakt[p] ~ dunif(0,2) # just a test because Lpeakt was providing invalid parent values
     Lmaxy[p] ~ dnorm(mu.lmaxy[p], tau.lmaxy)
     
     # Linear regression

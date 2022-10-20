@@ -154,6 +154,7 @@ init_names = c("A","B","tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.lpeakt", "sig.lmax
 
 # function that finds the index of variables to remove
 get_remove_index <- function(to_keep, list){
+  list <- sort(list, method = "radix")
   out_list <- c()
   for(j in c(1:length(list))){
     if(list[j] %in% to_keep){
