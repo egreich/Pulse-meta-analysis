@@ -10,6 +10,7 @@ load.module('dic')
 library(ggplot2)
 library(mcmcplots)
 library(postjags)
+library(udunits2)
 
 # Load data
 load("models/01-test-Ricker/inputET.Rdata") # et3
@@ -60,7 +61,10 @@ pulse_vars <- et3 %>%
             SWCunit = unique(SWCunit), # cm and mm
             SWCtype = factor(unique(SWCtype), levels = c("soil water content volumetric",
                                                          "soil water content unknown")),
-            SWCtype = as.numeric(SWCtype) - 1) # needs to be in two steps
+            SWCtype = as.numeric(SWCtype) - 1) %>% # needs to be in two steps
+  mutate(preSWC = case_when(SWCunit == "mm" ~ ud.convert(preSWC, "mm", "cm"),
+                            SWCunit == "cm" ~ preSWC),
+         SWCunit = ifelse(!is.na(SWCunit), "cm", NA))
 
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
@@ -76,9 +80,9 @@ datlist <- list(et = et3$LRR,
                 Nobs = nrow(et3),
                 Npulse = nrow(pulse_table),
                 Nparam = 4,
-                NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
+                #NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
                 preSWC = pulse_vars$preSWC,
-                SWCtype = pulse_vars$SWCtype,
+                #SWCtype = pulse_vars$SWCtype,
                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
                 MAP = as.vector(scale(pulse_vars$MAP)),
                 Nstudy = max(pulse_table$sID),
@@ -89,10 +93,12 @@ datlist <- list(et = et3$LRR,
 inits <- function(){
   list(A = rnorm(datlist$Nparam, 0, 10),
        B = rnorm(datlist$Nparam, 0, 10),
-       pp = runif(1, 0, 1),
-       a.swc = runif(datlist$NSWCtype, 0, 100),
-       b.swc = runif(datlist$NSWCtype, 0, 100),
-       U = c(1, runif(1, 0, 100)),
+       #pp = runif(1, 0, 1),
+       lmu.swc = runif(1, .5, 5),
+       ltau.swc = runif(1, .5, 5),
+       #a.swc = runif(datlist$NSWCtype, 0, 100),
+       #b.swc = runif(datlist$NSWCtype, 0, 100),
+       #U = c(1, runif(1, 0, 100)),
        tau.Eps.lpeakt = runif(1, 0, 10),
        tau.Eps.lmaxy = runif(1, 0, 10),
        sig.lpeakt = runif(1, 0, 10),
@@ -102,23 +108,36 @@ inits <- function(){
 initslist <- list(inits(), inits(), inits())
 
 # Initial values: from saved state
-#load("models/01-test-Ricker/inits/inits.Rdata")
+load("models/01-test-Ricker/inits/inits.Rdata")
+
+# Restart from chains with lowest deviance
+# which(colnames(jm_coda[[1]]) == "deviance")
+# mean(jm_coda[[1]][,10])
+# mean(jm_coda[[2]][,10])
+# mean(jm_coda[[3]][,10])
+# 
+# ss <- list(saved_state[[2]][[2]], 
+#            saved_state[[2]][[2]],
+#            saved_state[[2]][[2]])
+
+# names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/model2.R",
                  data = datlist,
-                 inits = initslist,
+                 inits = saved_state[[2]],
                  n.chains = 3)
 
 update(jm, 10000)
 
 # Run and monitor parameters
-params <- c("deviance", "Dsum", # model performance metrics
-            "peakt", "maxy", # study-level peakt and maxy
-            "mu.peakt","mu.maxy", # population-level peakt and maxy
-            "mu.Lpeakt","mu.Lmaxy", # population-level parameters on log scale, needed to reinitialize
-            "sig","tau", # sample sd and precision, needed to reinitialize
-            "sig.Lpeakt", "sig.Lmaxy") # sd among study-level log parameters, needed to reinitialize)
+params <- c("A", "B", # coefficients for linear model
+            "lmu.swc", "ltau.swc", # parameters for missing SWC
+            "tau.Eps.lpeakt", "tau.Eps.lmaxy", # precision for random effects
+            "deviance", "Dsum", # model performance metrics
+            "mu.lpeakt","mu.lmaxy", # population-level parameters on log scale
+            "sig","tau", # sample sd and precision
+            "sig.lpeakt", "sig.lmaxy") # sd among study-level log parameters
 
 jm_coda <- coda.samples(jm, variable.names = params,
                         n.iter = 9000, thin = 3)
@@ -131,11 +150,11 @@ save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
 
 
 # Plot output
-mcmcplot(jm_coda, parms = c("deviance", "Dsum", 
-                            "peakt", "maxy", 
-                            "mu.peakt","mu.maxy", 
-                            "sig", "sig.Lpeakt", "sig.Lmaxy"))
-                            # "mu.Lpeakt","mu.Lmaxy", "tau"))
+mcmcplot(jm_coda, parms = c("deviance", "Dsum",
+                            "mu.lpeakt","mu.lmaxy",
+                            "A", "B",
+                            "lmu.swc", "ltau.swc",
+                            "sig", "sig.lpeakt", "sig.lmaxy"))
 
 # Check convergence
 gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
@@ -150,10 +169,11 @@ filter(gel, grepl("sig", term))
 # Save state
 
 # inits to save
-init_names = c("A","B","tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.lpeakt", "sig.lmaxy", "tau")
+init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.lpeakt", "sig.lmaxy", "tau")
 
 # function that finds the index of variables to remove
 get_remove_index <- function(to_keep, list){
+  list <- list[list != "deviance"] # remove deviance
   list <- sort(list, method = "radix")
   out_list <- c()
   for(j in c(1:length(list))){
@@ -173,7 +193,7 @@ remove_vars = get_remove_index(init_names, params)
 newinits <- initfind(jm_coda, OpenBUGS = FALSE)
 newinits[[1]]
 saved_state <- removevars(initsin = newinits, 
-                          variables = remove_vars)
+                          variables = remove_vars) #c(3,6:8)
 saved_state[[1]]
 if(!dir.exists("models/01-test-Ricker/inits")) {
   dir.create("models/01-test-Ricker/inits")
