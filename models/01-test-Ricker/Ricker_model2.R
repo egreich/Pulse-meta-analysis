@@ -87,14 +87,14 @@ model{
   # so need to make sure that the U(0.5, 5) is appropriate on this scale (e.g.,
   # not cutting off potentially reasonable values).
   lmu.swc ~ dunif(0.1,5)
-  ltau.swc ~ dunif(.5,5)
+  ltau.swc ~ dunif(0.5,5)
   
   # @Emma: Since you have some missing data, the mean and sd below will change
   # with every MCMC iteration, which I don't think we want. I would compute
   # these in the Rscript based on the observed values, then put these in the 
   # data list for jags.model.
-  mean.SWC <- mean(preSWC[])
-  sd.SWC<- sd(preSWC[])
+  # mean.SWC <- mean(preSWC[])
+  # sd.SWC<- sd(preSWC[])
   
   # Priors for multiplicative effect of SWC type
   #U[1] ~ dunif(.99,1.01) # v/v is coded as "1"
@@ -128,17 +128,17 @@ model{
   
   # Priors for RE precision
   # Folded t distribution with 2 degrees of freedom for standard deviation
-  tau.Eps.lpeakt ~ dt(0, Tlpeakt, 2)
-  sig.eps.Lt <- abs(tau.Eps.lpeakt)
+  tau.Eps.Lt ~ dt(0, T.Lt, 2)
+  sig.eps.Lt <- abs(tau.Eps.Lt)
   tau.eps.Lt <- pow(sig.eps.Lt, -2)
   
-  tau.Eps.lmaxy ~ dt(0, Tlmaxy, 2)
-  sig.eps.y <- abs(tau.Eps.lmaxy)
+  tau.Eps.y ~ dt(0, T.y, 2)
+  sig.eps.y <- abs(tau.Eps.y)
   tau.eps.y <- pow(sig.eps.y, -2)
   
   # Parms for folded t; set as data Salpha
-  Tlpeakt <- pow(Slpeakt, -2)
-  Tlmaxy <- pow(Slmaxy, -2)
+  T.Lt <- pow(S.Lt, -2)
+  T.y <- pow(S.y, -2)
   
   
   # Priors for pulse level parameters:
@@ -154,9 +154,9 @@ model{
   # Standard deviations to monitor
   Sigs[1] <- sig # SD among observations
   Sigs[2] <- sig.Lt.peak # SD of peak t parameter (log scale) among pulses
-  Sigs[3] <- sig.y.peak # SD of max y parameter (log scale) among pulses
+  Sigs[3] <- sig.y.peak # SD of peak y parameter among pulses
   Sigs[4] <- sig.eps.Lt # SD of study RE for linear model of peak t (log scale)
-  Sigs[5] <- sig.eps.y # SD of study RE for linear model of max y (log scale)
+  Sigs[5] <- sig.eps.y # SD of study RE for linear model of peak y
   
   # Dsum
   Dsum <- sum(Sqdiff[])
