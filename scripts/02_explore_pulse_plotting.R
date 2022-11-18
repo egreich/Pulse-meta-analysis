@@ -126,7 +126,7 @@ ggsave2("pulse_pattern_var.png",
         units = "in") 
 
 # Color by soil type
-imp_var <- c("Gs", "Anet","T", "ecosystem R", "PWP", "WUE", "SWP") # narrow down variables
+imp_var <- c("Gs", "Anet","T", "ecosystemR", "belowgroundR", "PWP", "WUE", "SWP", "ET", "GPP") # narrow down variables
 
 d_clean4 %>%
   filter(varType %in% imp_var) %>%

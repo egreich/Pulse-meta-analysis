@@ -58,6 +58,7 @@ pulse_vars <- et3 %>%
   summarize(MAP = unique(MAP.mm.wc),
             pulse_amount = unique(Pulse.amount),
             preSWC = unique(preSWC),
+            preET = unique(preET),
             SWCunit = unique(SWCunit), # cm and mm
             SWCtype = factor(unique(SWCtype), levels = c("soil water content volumetric",
                                                          "soil water content unknown")),
@@ -73,16 +74,30 @@ pulse_vars <- et3 %>%
 et3 <- et3[et3$Days.relative.to.pulse != -1,] 
 
 # Prepare data list
+# datlist <- list(et = et3$LRR,
+#                 t = et3$Days.relative.to.pulse + 1,
+#                 pID = et3$pID,
+#                 sID = pulse_table$sID,
+#                 Nobs = nrow(et3),
+#                 Npulse = nrow(pulse_table),
+#                 Nparam = 4,
+#                 #NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
+#                 preSWC = pulse_vars$preSWC,
+#                 #SWCtype = pulse_vars$SWCtype,
+#                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
+#                 MAP = as.vector(scale(pulse_vars$MAP)),
+#                 Nstudy = max(pulse_table$sID),
+#                 Slpeakt = 2,
+#                 Slmaxy = 2)
 datlist <- list(et = et3$LRR,
                 t = et3$Days.relative.to.pulse + 1,
                 pID = et3$pID,
                 sID = pulse_table$sID,
                 Nobs = nrow(et3),
                 Npulse = nrow(pulse_table),
-                Nparam = 4,
-                #NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
+                Nparam = 5,
                 preSWC = pulse_vars$preSWC,
-                #SWCtype = pulse_vars$SWCtype,
+                Yinit = pulse_vars$preET,
                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
                 MAP = as.vector(scale(pulse_vars$MAP)),
                 Nstudy = max(pulse_table$sID),
@@ -91,18 +106,27 @@ datlist <- list(et = et3$LRR,
 
 # Initial values: manual specification to get model started
 inits <- function(){
+  # list(A = rnorm(datlist$Nparam, 0, 10),
+  #      B = rnorm(datlist$Nparam, 0, 10),
+  #      #pp = runif(1, 0, 1),
+  #      lmu.swc = runif(1, .5, 5),
+  #      ltau.swc = runif(1, .5, 5),
+  #      #a.swc = runif(datlist$NSWCtype, 0, 100),
+  #      #b.swc = runif(datlist$NSWCtype, 0, 100),
+  #      #U = c(1, runif(1, 0, 100)),
+  #      tau.Eps.lpeakt = runif(1, 0, 10),
+  #      tau.Eps.lmaxy = runif(1, 0, 10),
+  #      sig.lpeakt = runif(1, 0, 10),
+  #      sig.lmaxy = runif(1, 0, 10),
+  #      tau = runif(1, 0, 3))
   list(A = rnorm(datlist$Nparam, 0, 10),
        B = rnorm(datlist$Nparam, 0, 10),
-       #pp = runif(1, 0, 1),
        lmu.swc = runif(1, .5, 5),
        ltau.swc = runif(1, .5, 5),
-       #a.swc = runif(datlist$NSWCtype, 0, 100),
-       #b.swc = runif(datlist$NSWCtype, 0, 100),
-       #U = c(1, runif(1, 0, 100)),
        tau.Eps.lpeakt = runif(1, 0, 10),
        tau.Eps.lmaxy = runif(1, 0, 10),
-       sig.lpeakt = runif(1, 0, 10),
-       sig.lmaxy = runif(1, 0, 10),
+       sig.Lt.peak = runif(1, 0, 10),
+       sig.y.peak = runif(1, 0, 10),
        tau = runif(1, 0, 3))
 }
 initslist <- list(inits(), inits(), inits())
@@ -111,33 +135,49 @@ initslist <- list(inits(), inits(), inits())
 load("models/01-test-Ricker/inits/inits.Rdata")
 
 # Restart from chains with lowest deviance
-# which(colnames(jm_coda[[1]]) == "deviance")
-# mean(jm_coda[[1]][,10])
-# mean(jm_coda[[2]][,10])
-# mean(jm_coda[[3]][,10])
-# 
-# ss <- list(saved_state[[2]][[2]], 
-#            saved_state[[2]][[2]],
-#            saved_state[[2]][[2]])
+dev_col <- which(colnames(jm_coda[[1]]) == "deviance")
+dev1<- mean(jm_coda[[1]][,dev_col])
+dev2<- mean(jm_coda[[2]][,dev_col])
+dev3<- mean(jm_coda[[3]][,dev_col])
+dev_min <- min(dev1, dev2, dev3)
+if(dev1 == dev_min){
+  devin = 1
+} else if(dev2 == dev_min){
+  devin = 2
+} else if(dev2 == dev_min){
+  devin = 3
+}
 
-# names(initslist[[1]]) %in% names(ss[[1]])
+ss <- list(saved_state[[2]][[devin]],
+           lapply(saved_state[[2]][[devin]],"*",2),
+           lapply(saved_state[[2]][[devin]],"/",5))
+
+ names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
-jm <- jags.model("models/01-test-Ricker/model2.R",
+jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = saved_state[[2]],
+                 inits = initslist,
                  n.chains = 3)
 
 update(jm, 10000)
 
 # Run and monitor parameters
+# params <- c("A", "B", # coefficients for linear model
+#             "lmu.swc", "ltau.swc", # parameters for missing SWC
+#             "tau.Eps.lpeakt", "tau.Eps.lmaxy", # precision for random effects
+#             "Eps.lpeakt", "Eps.lmaxy", # pulse-level random effects
+#             "deviance", "Dsum", # model performance metrics
+#             "mu.lpeakt","mu.lmaxy", # population-level parameters on log scale
+#             "sig","tau", # sample sd and precision
+#             "sig.lpeakt", "sig.lmaxy") # sd among pulse-level log parameters
 params <- c("A", "B", # coefficients for linear model
             "lmu.swc", "ltau.swc", # parameters for missing SWC
             "tau.Eps.lpeakt", "tau.Eps.lmaxy", # precision for random effects
+            "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
             "deviance", "Dsum", # model performance metrics
-            "mu.lpeakt","mu.lmaxy", # population-level parameters on log scale
-            "sig","tau", # sample sd and precision
-            "sig.lpeakt", "sig.lmaxy") # sd among study-level log parameters
+            "t.peak","y.peak", # population-level parameters on log scale
+            "sig.Lt.peak", "sig.y.peak","tau") # sample sd and precision, sd among pulse-level log parameters
 
 jm_coda <- coda.samples(jm, variable.names = params,
                         n.iter = 9000, thin = 3)
@@ -151,10 +191,15 @@ save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
 
 # Plot output
 mcmcplot(jm_coda, parms = c("deviance", "Dsum",
-                            "mu.lpeakt","mu.lmaxy",
+                            "t.peak","y.peak",
                             "A", "B",
                             "lmu.swc", "ltau.swc",
-                            "sig", "sig.lpeakt", "sig.lmaxy"))
+                            "tau.Eps.lpeakt","tau.Eps.lmaxy", 
+                            "sig.Lt.peak", "sig.y.peak", "tau"))
+
+caterplot(jm_coda, parms = "Eps.lpeakt", reorder = F)
+caterplot(jm_coda, parms = "Eps.lmaxy", reorder = F)
+caterplot(jm_coda, parms = "mu.lmaxy", reorder = F)
 
 # Check convergence
 gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
@@ -169,7 +214,7 @@ filter(gel, grepl("sig", term))
 # Save state
 
 # inits to save
-init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.lpeakt", "sig.lmaxy", "tau")
+init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.Lt.peak", "sig.y.peak", "tau")
 
 # function that finds the index of variables to remove
 get_remove_index <- function(to_keep, list){
@@ -193,7 +238,7 @@ remove_vars = get_remove_index(init_names, params)
 newinits <- initfind(jm_coda, OpenBUGS = FALSE)
 newinits[[1]]
 saved_state <- removevars(initsin = newinits, 
-                          variables = remove_vars) #c(3,6:8)
+                          variables = remove_vars)
 saved_state[[1]]
 if(!dir.exists("models/01-test-Ricker/inits")) {
   dir.create("models/01-test-Ricker/inits")
