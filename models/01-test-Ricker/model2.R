@@ -38,8 +38,8 @@ model{
     # Linear regression
     #mu.lpeakt[p] <- A[1] + A[2]*U[SWCtype[p] + 1]*preSWC.scaled[p]+ A[3]*pulse_amount[p] + A[4]*MAP[p] + Eps.lpeakt[sID[p]]
     #mu.lmaxy[p] <- B[1] + B[2]*U[SWCtype[p] + 1]*preSWC.scaled[p] + B[3]*pulse_amount[p] + B[4]*MAP[p] + Eps.lmaxy[sID[p]]
-    mu.lpeakt[p] <- A[1] + A[2]*preSWC.scaled[p]+ A[3]*pulse_amount[p] + A[4]*MAP[p] + Eps.lpeakt[sID[p]]
-    mu.lmaxy[p] <- B[1] + B[2]*preSWC.scaled[p] + B[3]*pulse_amount[p] + B[4]*MAP[p] + Eps.lmaxy[sID[p]]
+    mu.lpeakt[p] <- A[1] + A[2]*preSWC.scaled[p]+ A[3]*pulse_amount[p] + A[4]*MAP[p] + Eps.lpeakt[p]
+    mu.lmaxy[p] <- B[1] + B[2]*preSWC.scaled[p] + B[3]*pulse_amount[p] + B[4]*MAP[p] + Eps.lmaxy[p]
     # A[2], B[2] -> effect when volumetric
     # U[k] -> multiplicative effect when unknown
     # SWCtype[p] = 1 if volumetric; = 2 if unknown; = 3 if gravimetric (no gravimetric in this dataset)
@@ -95,14 +95,14 @@ model{
   }
   
   # Priors for RE
-  for(s in 1:Nstudy){ # number of studies
+  for(p in 1:Npulse){ # number of pulses for pulse-level RE
     # Non-identifiable RE
-    Eps.lpeakt[s] ~ dnorm(0, tau.eps.lpeakt)
-    Eps.lmaxy[s] ~ dnorm(0, tau.eps.lmaxy)
+    Eps.lpeakt[p] ~ dnorm(0, tau.eps.lpeakt)
+    Eps.lmaxy[p] ~ dnorm(0, tau.eps.lmaxy)
     
     # Identifiable RE (centered)
-    Estar.lpeakt[s] <-  Eps.lpeakt[s] - mean.eps.lpeakt
-    Estar.lmaxy[s] <-  Eps.lmaxy[s] - mean.eps.lmaxy
+    Estar.lpeakt[p] <-  Eps.lpeakt[p] - mean.eps.lpeakt
+    Estar.lmaxy[p] <-  Eps.lmaxy[p] - mean.eps.lmaxy
   }
   
   # Define mean of RE

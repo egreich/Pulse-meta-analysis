@@ -90,6 +90,21 @@ et_swc <- d %>%
 et3 <- et2 %>%
   left_join(et_swc, by = c("Study.ID", "Pulse.ID", "Source.file.name"))
 
+#### Create a pre-ET as a new column ####
+et_y <- d %>%
+  filter(varType == "ET",
+         Study.ID %in% et2$Study.ID) %>%
+  mutate(Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                            Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day"))) %>%
+  group_by(Study.ID, Source.file.name, Pulse.ID) %>%
+  summarize(initialDay.et = min(Days.relative.to.pulse),
+            preET = Mean[which.min(Days.relative.to.pulse)],
+            preET.SD = SD[which.min(Days.relative.to.pulse)]) %>%
+  ungroup()
+
+et3 <- et3 %>%
+  left_join(et_y, by = c("Study.ID", "Pulse.ID", "Source.file.name"))
+
 
 # Save to models/01-test-Ricker
 save(et3, file = "models/01-test-Ricker/inputET.Rdata")
