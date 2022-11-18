@@ -27,10 +27,11 @@ pulse_table <- et3 %>%
   mutate(pID = as.numeric(pID)) %>%
   relocate(pID, .after = sID)
 
-# Join with et2
+# Join with full table, restrict to 14 days after pulse
 et3 <- et3 %>%
   left_join(pulse_table) %>%
-  relocate(sID, pID)
+  relocate(sID, pID) %>%
+  filter(Days.relative.to.pulse <= 14)
 
 # Plot
 et3 %>%
@@ -42,13 +43,13 @@ et3 %>%
 
 ggplot(et3, aes(x = Days.relative.to.pulse + 1,
            y = LRR)) +
-  geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
-                 ymax = LRR + sqrt(poolVar),
-                 color = as.factor(sID)),
-                width = 0) +
+  # geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
+                #  ymax = LRR + sqrt(poolVar),
+                #  color = as.factor(sID)),
+                # width = 0) +
   geom_point(aes(color = as.factor(sID))) +
-  geom_hline(yintercept = 0) +
-  facet_wrap(~sID, scales = "free_y") +
+  geom_hline(yintercept = 0, lty = 2) +
+  facet_wrap(~pID) +
   theme_bw() +
   guides(color = "none")
 
@@ -74,21 +75,6 @@ pulse_vars <- et3 %>%
 et3 <- et3[et3$Days.relative.to.pulse != -1,] 
 
 # Prepare data list
-# datlist <- list(et = et3$LRR,
-#                 t = et3$Days.relative.to.pulse + 1,
-#                 pID = et3$pID,
-#                 sID = pulse_table$sID,
-#                 Nobs = nrow(et3),
-#                 Npulse = nrow(pulse_table),
-#                 Nparam = 4,
-#                 #NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
-#                 preSWC = pulse_vars$preSWC,
-#                 #SWCtype = pulse_vars$SWCtype,
-#                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
-#                 MAP = as.vector(scale(pulse_vars$MAP)),
-#                 Nstudy = max(pulse_table$sID),
-#                 Slpeakt = 2,
-#                 Slmaxy = 2)
 datlist <- list(et = et3$LRR,
                 t = et3$Days.relative.to.pulse + 1,
                 pID = et3$pID,
@@ -99,28 +85,15 @@ datlist <- list(et = et3$LRR,
                 preSWC = pulse_vars$preSWC,
                 mean.SWC = mean(pulse_vars$preSWC, na.rm = TRUE),
                 sd.SWC = sd(pulse_vars$preSWC, na.rm = TRUE),
-                Yinit = pulse_vars$preET,
                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
                 MAP = as.vector(scale(pulse_vars$MAP)),
+                Yinit = pulse_vars$preET,
                 Nstudy = max(pulse_table$sID),
                 S.Lt = 2,
                 S.y = 2)
 
 # Initial values: manual specification to get model started
 inits <- function(){
-  # list(A = rnorm(datlist$Nparam, 0, 10),
-  #      B = rnorm(datlist$Nparam, 0, 10),
-  #      #pp = runif(1, 0, 1),
-  #      lmu.swc = runif(1, .5, 5),
-  #      ltau.swc = runif(1, .5, 5),
-  #      #a.swc = runif(datlist$NSWCtype, 0, 100),
-  #      #b.swc = runif(datlist$NSWCtype, 0, 100),
-  #      #U = c(1, runif(1, 0, 100)),
-  #      tau.Eps.lpeakt = runif(1, 0, 10),
-  #      tau.Eps.lmaxy = runif(1, 0, 10),
-  #      sig.lpeakt = runif(1, 0, 10),
-  #      sig.lmaxy = runif(1, 0, 10),
-  #      tau = runif(1, 0, 3))
   list(A = rnorm(datlist$Nparam, 0, 10),
        B = rnorm(datlist$Nparam, 0, 10),
        lmu.swc = runif(1, 0.1, 5),
@@ -159,7 +132,7 @@ names(initslist[[1]]) %in% names(ss[[1]])
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = ss,
+                 inits = saved_state[[2]],
                  n.chains = 3)
 
 update(jm, 100000)
@@ -180,10 +153,11 @@ params <- c("A", "B", # coefficients for linear model
             "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
             "deviance", "Dsum", # model performance metrics
             "t.peak","y.peak", # population-level parameters on log scale
-            "sig.Lt.peak", "sig.y.peak","tau") # sample sd and precision, sd among pulse-level log parameters
+            "sig.Lt.peak", "sig.y.peak","tau", # sample sd and precision, sd among pulse-level log parameters
+            "R2") # Model fit
 
 jm_coda <- coda.samples(jm, variable.names = params,
-                        n.iter = 9000, thin = 3)
+                        n.iter = 15000, thin = 5)
 
 # If converged, save out
 if(!dir.exists("models/01-test-Ricker/coda")) {
@@ -198,11 +172,13 @@ mcmcplot(jm_coda, parms = c("deviance", "Dsum",
                             "A", "B",
                             "lmu.swc", "ltau.swc",
                             "Sigs",
-                            "sig.Lt.peak", "sig.y.peak", "tau"))
+                            "sig.Lt.peak", "sig.y.peak", "tau",
+                            "R2"))
 
-caterplot(jm_coda, parms = "Eps.lpeakt", reorder = F)
-caterplot(jm_coda, parms = "Eps.lmaxy", reorder = F)
-caterplot(jm_coda, parms = "mu.lmaxy", reorder = F)
+caterplot(jm_coda, parms = "Estar.Lt.peak", reorder = F)
+caterplot(jm_coda, parms = "Estar.y.peak", reorder = F)
+caterplot(jm_coda, parms = "A", reorder = F)
+caterplot(jm_coda, parms = "B", reorder = F)
 
 # Check convergence
 gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
