@@ -27,11 +27,12 @@ pulse_table <- et3 %>%
   mutate(pID = as.numeric(pID)) %>%
   relocate(pID, .after = sID)
 
-# Join with full table, restrict to 14 days after pulse
+# Join with full table, restrict to 14 days after pulse, remove pre-pulse days
 et3 <- et3 %>%
   left_join(pulse_table) %>%
   relocate(sID, pID) %>%
-  filter(Days.relative.to.pulse <= 14)
+  filter(Days.relative.to.pulse <= 14,
+         Days.relative.to.pulse != -1)
 
 # Plot
 et3 %>%
@@ -71,8 +72,7 @@ pulse_vars <- et3 %>%
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
 
-# Get rid of pre-pulse data in et3 table to anchor at 0
-et3 <- et3[et3$Days.relative.to.pulse != -1,] 
+
 
 # Prepare data list
 datlist <- list(et = et3$LRR,
@@ -152,7 +152,7 @@ params <- c("A", "B", # coefficients for linear model
             "Sigs",
             "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
             "deviance", "Dsum", # model performance metrics
-            "t.peak","y.peak", # population-level parameters on log scale
+            "t.peak","y.peak", "Lt.peak", # population-level parameters
             "sig.Lt.peak", "sig.y.peak","tau", # sample sd and precision, sd among pulse-level log parameters
             "R2") # Model fit
 
@@ -163,12 +163,13 @@ jm_coda <- coda.samples(jm, variable.names = params,
 if(!dir.exists("models/01-test-Ricker/coda")) {
   dir.create("models/01-test-Ricker/coda")
 }
-save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
 
+save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
+# load(file = "models/01-test-Ricker/coda/jm_coda.Rdata")
 
 # Plot output
 mcmcplot(jm_coda, parms = c("deviance", "Dsum",
-                            "t.peak","y.peak",
+                            "t.peak","y.peak", 
                             "A", "B",
                             "lmu.swc", "ltau.swc",
                             "Sigs",
@@ -185,8 +186,8 @@ gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
   tibble::rownames_to_column(var = "term")
   
 filter(gel, grepl("Dsum", term))
-filter(gel, grepl("^maxy", term))
-filter(gel, grepl("^peakt", term))
+filter(gel, grepl("^y.peak", term))
+filter(gel, grepl("^t.peak", term))
 filter(gel, grepl("mu\\.", term))
 filter(gel, grepl("sig", term))
 
@@ -227,6 +228,6 @@ save(saved_state, file = "models/01-test-Ricker/inits/inits.Rdata") #for local
 
 # If converged, run and save replicated data
 jm_rep <- coda.samples(jm, variable.names = "et.rep",
-                       n.iter = 9000, thin = 3)
+                       n.iter = 15000, thin = 5)
 
 save(jm_rep, file = "models/01-test-Ricker/coda/jm_rep.Rdata") #for local
