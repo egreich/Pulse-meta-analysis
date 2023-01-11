@@ -13,13 +13,13 @@ library(postjags)
 library(udunits2)
 
 # Load data
-load("models/01-test-Ricker/model_input.Rdata") # et3
+load("models/01-test-Ricker/model_input.Rdata") # out_list
 
 run_mod <- function(dfin, varname){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  #dfin <- as.data.frame(outlist[1])
+  #dfin <- as.data.frame(out_list[1])
   #varname <- "ET"
   
   initfilename <- paste("./models/01-test-Ricker/inits/inits_", varname,".RData", sep = "")
@@ -256,7 +256,7 @@ variables <- c("ET", "WUE", "T", "Gs", "PWP",
                "NPP", "GPP", "Anet")
 
 for(i in 1:length(variables)){
-  df_var <- as.data.frame(outlist[i])
+  df_var <- as.data.frame(out_list[i])
   run_mod(df_var, variables[i])
 }
 
