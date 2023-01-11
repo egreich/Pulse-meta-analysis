@@ -27,10 +27,12 @@ pulse_table <- et3 %>%
   mutate(pID = as.numeric(pID)) %>%
   relocate(pID, .after = sID)
 
-# Join with et2
+# Join with full table, restrict to 14 days after pulse, remove pre-pulse days
 et3 <- et3 %>%
   left_join(pulse_table) %>%
-  relocate(sID, pID)
+  relocate(sID, pID) %>%
+  filter(Days.relative.to.pulse <= 14,
+         Days.relative.to.pulse != -1)
 
 # Plot
 et3 %>%
@@ -42,13 +44,13 @@ et3 %>%
 
 ggplot(et3, aes(x = Days.relative.to.pulse + 1,
            y = LRR)) +
-  geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
-                 ymax = LRR + sqrt(poolVar),
-                 color = as.factor(sID)),
-                width = 0) +
+  # geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
+                #  ymax = LRR + sqrt(poolVar),
+                #  color = as.factor(sID)),
+                # width = 0) +
   geom_point(aes(color = as.factor(sID))) +
-  geom_hline(yintercept = 0) +
-  facet_wrap(~sID, scales = "free_y") +
+  geom_hline(yintercept = 0, lty = 2) +
+  facet_wrap(~pID) +
   theme_bw() +
   guides(color = "none")
 
@@ -70,25 +72,9 @@ pulse_vars <- et3 %>%
 #sum(!is.na(pulse_vars$MAP))
 #sum(!is.na(pulse_vars$pulse_amount))
 
-# Get rid of pre-pulse data in et3 table to anchor at 0
-et3 <- et3[et3$Days.relative.to.pulse != -1,] 
+
 
 # Prepare data list
-# datlist <- list(et = et3$LRR,
-#                 t = et3$Days.relative.to.pulse + 1,
-#                 pID = et3$pID,
-#                 sID = pulse_table$sID,
-#                 Nobs = nrow(et3),
-#                 Npulse = nrow(pulse_table),
-#                 Nparam = 4,
-#                 #NSWCtype = max(pulse_vars$SWCtype, na.rm=T) + 1,
-#                 preSWC = pulse_vars$preSWC,
-#                 #SWCtype = pulse_vars$SWCtype,
-#                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
-#                 MAP = as.vector(scale(pulse_vars$MAP)),
-#                 Nstudy = max(pulse_table$sID),
-#                 Slpeakt = 2,
-#                 Slmaxy = 2)
 datlist <- list(et = et3$LRR,
                 t = et3$Days.relative.to.pulse + 1,
                 pID = et3$pID,
@@ -97,34 +83,23 @@ datlist <- list(et = et3$LRR,
                 Npulse = nrow(pulse_table),
                 Nparam = 5,
                 preSWC = pulse_vars$preSWC,
-                Yinit = pulse_vars$preET,
+                mean.SWC = mean(pulse_vars$preSWC, na.rm = TRUE),
+                sd.SWC = sd(pulse_vars$preSWC, na.rm = TRUE),
                 pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
                 MAP = as.vector(scale(pulse_vars$MAP)),
+                Yinit = pulse_vars$preET,
                 Nstudy = max(pulse_table$sID),
-                Slpeakt = 2,
-                Slmaxy = 2)
+                S.Lt = 2,
+                S.y = 2)
 
 # Initial values: manual specification to get model started
 inits <- function(){
-  # list(A = rnorm(datlist$Nparam, 0, 10),
-  #      B = rnorm(datlist$Nparam, 0, 10),
-  #      #pp = runif(1, 0, 1),
-  #      lmu.swc = runif(1, .5, 5),
-  #      ltau.swc = runif(1, .5, 5),
-  #      #a.swc = runif(datlist$NSWCtype, 0, 100),
-  #      #b.swc = runif(datlist$NSWCtype, 0, 100),
-  #      #U = c(1, runif(1, 0, 100)),
-  #      tau.Eps.lpeakt = runif(1, 0, 10),
-  #      tau.Eps.lmaxy = runif(1, 0, 10),
-  #      sig.lpeakt = runif(1, 0, 10),
-  #      sig.lmaxy = runif(1, 0, 10),
-  #      tau = runif(1, 0, 3))
   list(A = rnorm(datlist$Nparam, 0, 10),
        B = rnorm(datlist$Nparam, 0, 10),
-       lmu.swc = runif(1, .5, 5),
-       ltau.swc = runif(1, .5, 5),
-       tau.Eps.lpeakt = runif(1, 0, 10),
-       tau.Eps.lmaxy = runif(1, 0, 10),
+       lmu.swc = runif(1, 0.1, 5),
+       ltau.swc = runif(1, 0.5, 5),
+       tau.Eps.Lt = runif(1, 0, 10),
+       tau.Eps.y = runif(1, 0, 10),
        sig.Lt.peak = runif(1, 0, 10),
        sig.y.peak = runif(1, 0, 10),
        tau = runif(1, 0, 3))
@@ -144,23 +119,23 @@ if(dev1 == dev_min){
   devin = 1
 } else if(dev2 == dev_min){
   devin = 2
-} else if(dev2 == dev_min){
+} else if(dev3 == dev_min){
   devin = 3
 }
 
 ss <- list(saved_state[[2]][[devin]],
-           lapply(saved_state[[2]][[devin]],"*",2),
-           lapply(saved_state[[2]][[devin]],"/",5))
+           saved_state[[2]][[devin]],
+           saved_state[[2]][[devin]])
 
- names(initslist[[1]]) %in% names(ss[[1]])
+names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = initslist,
+                 inits = saved_state[[2]],
                  n.chains = 3)
 
-update(jm, 10000)
+update(jm, 100000)
 
 # Run and monitor parameters
 # params <- c("A", "B", # coefficients for linear model
@@ -173,48 +148,54 @@ update(jm, 10000)
 #             "sig.lpeakt", "sig.lmaxy") # sd among pulse-level log parameters
 params <- c("A", "B", # coefficients for linear model
             "lmu.swc", "ltau.swc", # parameters for missing SWC
-            "tau.Eps.lpeakt", "tau.Eps.lmaxy", # precision for random effects
+            "tau.Eps.Lt", "tau.Eps.y", # precision for random effects
+            "Sigs",
             "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
             "deviance", "Dsum", # model performance metrics
-            "t.peak","y.peak", # population-level parameters on log scale
-            "sig.Lt.peak", "sig.y.peak","tau") # sample sd and precision, sd among pulse-level log parameters
+            "t.peak","y.peak", "Lt.peak", # population-level parameters
+            "sig.Lt.peak", "sig.y.peak","tau", # sample sd and precision, sd among pulse-level log parameters
+            "R2") # Model fit
 
 jm_coda <- coda.samples(jm, variable.names = params,
-                        n.iter = 9000, thin = 3)
+                        n.iter = 15000, thin = 5)
 
 # If converged, save out
 if(!dir.exists("models/01-test-Ricker/coda")) {
   dir.create("models/01-test-Ricker/coda")
 }
-save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
 
+save(jm_coda, file = "models/01-test-Ricker/coda/jm_coda.Rdata") #for local
+# load(file = "models/01-test-Ricker/coda/jm_coda.Rdata")
 
 # Plot output
 mcmcplot(jm_coda, parms = c("deviance", "Dsum",
-                            "t.peak","y.peak",
+                            "t.peak","y.peak", 
                             "A", "B",
                             "lmu.swc", "ltau.swc",
-                            "tau.Eps.lpeakt","tau.Eps.lmaxy", 
-                            "sig.Lt.peak", "sig.y.peak", "tau"))
+                            "Sigs",
+                            "sig.Lt.peak", "sig.y.peak", "tau",
+                            "R2"))
 
-caterplot(jm_coda, parms = "Eps.lpeakt", reorder = F)
-caterplot(jm_coda, parms = "Eps.lmaxy", reorder = F)
-caterplot(jm_coda, parms = "mu.lmaxy", reorder = F)
+caterplot(jm_coda, parms = "Estar.Lt.peak", reorder = F)
+caterplot(jm_coda, parms = "Estar.y.peak", reorder = F)
+caterplot(jm_coda, parms = "A", reorder = F)
+caterplot(jm_coda, parms = "B", reorder = F)
 
 # Check convergence
 gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
   tibble::rownames_to_column(var = "term")
   
 filter(gel, grepl("Dsum", term))
-filter(gel, grepl("^maxy", term))
-filter(gel, grepl("^peakt", term))
+filter(gel, grepl("^y.peak", term))
+filter(gel, grepl("^t.peak", term))
 filter(gel, grepl("mu\\.", term))
 filter(gel, grepl("sig", term))
 
 # Save state
 
 # inits to save
-init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.lpeakt","tau.Eps.lmaxy", "sig.Lt.peak", "sig.y.peak", "tau")
+init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.Lt","tau.Eps.y", 
+               "sig.Lt.peak", "sig.y.peak", "tau")
 
 # function that finds the index of variables to remove
 get_remove_index <- function(to_keep, list){
@@ -247,6 +228,6 @@ save(saved_state, file = "models/01-test-Ricker/inits/inits.Rdata") #for local
 
 # If converged, run and save replicated data
 jm_rep <- coda.samples(jm, variable.names = "et.rep",
-                       n.iter = 9000, thin = 3)
+                       n.iter = 15000, thin = 5)
 
 save(jm_rep, file = "models/01-test-Ricker/coda/jm_rep.Rdata") #for local
