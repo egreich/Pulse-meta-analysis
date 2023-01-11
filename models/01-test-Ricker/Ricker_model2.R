@@ -3,9 +3,9 @@ model{
   
   for(i in 1:Nobs){ # number of observations
     # Likelihood for the log-response ratio (e.g., LRR for ET)
-    et[i] ~ dnorm(mu[i], tau)
+    Y[i] ~ dnorm(mu[i], tau)
     # Replicated data
-    et.rep[i] ~ dnorm(mu[i], tau)
+    Y.rep[i] ~ dnorm(mu[i], tau)
     
     # Mean model based on a reparameterization of the Ricker function, expressed 
     # on the "original" LRR scale (i.e., not transformed).
