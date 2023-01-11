@@ -181,5 +181,8 @@ write.csv(cov_mat_air_df, file = "data_clean/tables/matrix_air_covariates.csv")
 
 write.csv(cov_mat_soil_df, file = "data_clean/tables/matrix_soil_covariates.csv")
 
+write.csv(count1_df, file = "data_clean/tables/count_1.csv")
+write.csv(count2_df, file = "data_clean/tables/count_2.csv")
+
 
 

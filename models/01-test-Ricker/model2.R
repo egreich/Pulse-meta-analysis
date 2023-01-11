@@ -10,9 +10,9 @@ model{
   
   for(i in 1:Nobs){ # number of observations
     # Likelihood
-    et[i] ~ dnorm(mu[i], tau)
+    Y[i] ~ dnorm(mu[i], tau)
     # Replicated data
-    et.rep[i] ~ dnorm(mu[i], tau)
+    Y.rep[i] ~ dnorm(mu[i], tau)
     
     # Mean model
     # KO: Here's an alternative that is reparameterized in terms of "meaningful" parameters and first
