@@ -3,6 +3,10 @@
 # Load data
 load("models/01-test-Ricker/model_input.Rdata") # out_list
 
+if(!dir.exists("models/01-test-Ricker/plots")){
+  dir.create("models/01-test-Ricker/plots")
+}
+
 for(vn in names(out_list)) {
   dfin <- out_list[[vn]]
   
