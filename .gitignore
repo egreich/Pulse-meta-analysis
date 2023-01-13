@@ -19,3 +19,7 @@ pulse_app/rsconnect/
 
 # Suppress extraction folders
 extractions/
+
+# Suppress model codas
+models/01-test-Ricker/coda
+models/01-test-Ricker/plots
