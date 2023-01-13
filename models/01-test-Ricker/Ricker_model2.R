@@ -18,7 +18,7 @@ model{
     LogPart[i] <- 1-(t[i]/t.peak[pID[i]]) + log(t[i]) - Lt.peak[pID[i]]
 
     # Square differences
-    Sqdiff[i] <- pow(et[i] - et.rep[i], 2) 
+    Sqdiff[i] <- pow(Y[i] - Y.rep[i], 2) 
   }
   # Compute Bayesian R2 value
   var.pred <- pow(sd(mu[]),2)

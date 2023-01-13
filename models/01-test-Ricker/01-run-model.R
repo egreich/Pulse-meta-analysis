@@ -19,8 +19,9 @@ run_mod <- function(dfin, varname){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  #dfin <- as.data.frame(out_list[1])
-  #varname <- "ET"
+  varname <- "Gs"
+  dfin <- out_list[[varname]]
+  
   
   initfilename <- paste("./models/01-test-Ricker/inits/inits_", varname,".RData", sep = "")
   jm_codafilename <- paste("./models/01-test-Ricker/coda/jm_coda_", varname,".RData", sep = "")
@@ -60,7 +61,7 @@ ggplot(df, aes(x = Days.relative.to.pulse + 1,
                 # width = 0) +
   geom_point(aes(color = as.factor(sID))) +
   geom_hline(yintercept = 0, lty = 2) +
-  facet_wrap(~pID) +
+  facet_wrap(~pID, scales = "free_y") +
   theme_bw() +
   guides(color = "none")
 
@@ -70,7 +71,7 @@ pulse_vars <- df %>%
   summarize(MAP = unique(MAP.mm.wc),
             pulse_amount = unique(Pulse.amount),
             preSWC = unique(preSWC),
-            preET = unique(preET),
+            preVar = unique(preVar),
             SWCunit = unique(SWCunit), # cm and mm
             SWCtype = factor(unique(SWCtype), levels = c("soil water content volumetric",
                                                          "soil water content unknown")),
@@ -145,7 +146,7 @@ if(file.exists(initfilename)){
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = saved_state[[2]],
+                 inits = saved_state[[2]], # Or initslist if restarting from scratch
                  n.chains = 3)
 
 update(jm, 100000)
@@ -165,7 +166,8 @@ params <- c("A", "B", # coefficients for linear model
             "Sigs",
             "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
             "deviance", "Dsum", # model performance metrics
-            "t.peak","y.peak", "Lt.peak", # population-level parameters
+            "t.peak","y.peak", "Lt.peak", # pulse-level parameters
+            "mu.Lt.peak", "mu.y.peak", # population-level parameters
             "sig.Lt.peak", "sig.y.peak","tau", # sample sd and precision, sd among pulse-level log parameters
             "R2") # Model fit
 

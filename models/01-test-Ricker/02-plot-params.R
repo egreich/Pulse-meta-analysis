@@ -7,9 +7,21 @@ library(tidyr)
 library(ggplot2)
 
 # Load data and coda
-load("models/01-test-Ricker/inputET.Rdata") # et3
+load("models/01-test-Ricker/model_input.Rdata")  # List of all variable dataframes
+# Var names: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 
+# 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
 
-pulse_table <- et3 %>%
+varname <- "ET"
+dfin <- out_list[[varname]]
+
+# Create file names
+jm_codafilename <- paste("./models/01-test-Ricker/coda/jm_coda_", varname,".RData", sep = "")
+jm_repfilename <- paste("./models/01-test-Ricker/coda/jm_rep_", varname,".RData", sep = "")
+
+
+# load("models/01-test-Ricker/inputET.Rdata") # et3
+
+pulse_table <- dfin %>%
   expand(nesting(Study.ID, Pulse.ID)) %>%
   mutate(sID = as.numeric(factor(Study.ID))) %>%
   arrange(Study.ID) %>%
@@ -19,14 +31,14 @@ pulse_table <- et3 %>%
   relocate(pID, .after = sID)
 
 # Join with full table, restrict to 14 days after pulse, remove pre-pulse days
-et3 <- et3 %>%
+df2 <- dfin %>%
   left_join(pulse_table) %>%
   relocate(sID, pID) %>%
   filter(Days.relative.to.pulse <= 14,
          Days.relative.to.pulse != -1)
 
 # Plot each pulse
-ggplot(et3, aes(x = Days.relative.to.pulse + 1,
+ggplot(df2, aes(x = Days.relative.to.pulse + 1,
                 y = LRR)) +
   # geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
   #  ymax = LRR + sqrt(poolVar),
@@ -40,8 +52,8 @@ ggplot(et3, aes(x = Days.relative.to.pulse + 1,
 
 # Load codas
 
-load(file = "models/01-test-Ricker/coda/jm_coda.Rdata")
-load(file = "models/01-test-Ricker/coda/jm_rep.Rdata") 
+load(file = jm_codafilename)
+load(file = jm_repfilename) 
 
 # Summarize
 param_sum <- tidyMCMC(jm_coda,
@@ -52,7 +64,7 @@ rep_sum <- tidyMCMC(jm_rep,
                     conf.int = TRUE,
                     conf.method = "HPDinterval")
 
-pred <- cbind.data.frame(et3, rep_sum)
+pred <- cbind.data.frame(df2, rep_sum)
 
 
 # Extract posterior means for Ricker parameters
@@ -65,7 +77,7 @@ tpeaks <- param_sum %>%
 Ltpeaks <- param_sum %>%
   filter(grepl("^Lt.peak", term))
 
-pulse_params <- data.frame(pID = 1:29,
+pulse_params <- data.frame(pID = 1:nrow(pulse_table),
                            ypeak = ypeaks$estimate,
                            tpeak = tpeaks$estimate,
                            Ltpeak = Ltpeaks$estimate)
@@ -133,15 +145,16 @@ ggplot() +
 
 
 # Plot parameters
-pop <- param_sum %>%
-  filter(grepl("mu\\.maxy", term) |
-           grepl("mu\\.peakt", term)) %>%
-  tidyr::separate(term, c("level", "variable"))
+# pop <- param_sum %>%
+#   filter(grepl("mu\\.y\\.peak", term) |
+#            grepl("mu\\.Lt\\.peak", term)) %>%
+#   tidyr::separate(term, c("level", "variable"))
 
 pulse <- param_sum %>%
-  filter(grepl("^maxy", term) |
-           grepl("^peakt", term)) %>%
-  tidyr::separate(term, c("variable", "pulse"))
+  filter(grepl("^y\\.peak", term) |
+           grepl("^t\\.peak", term)) %>%
+  tidyr::separate(term, c("variable", NA, "pulse"))
+
 
 ggplot() +
   geom_pointrange(data = pulse, 
@@ -151,13 +164,13 @@ ggplot() +
                       ymax = conf.high,
                       color = factor(pulse)),
                   position = position_dodge(width = 1),
-                  alpha = 0.5) +
-  geom_pointrange(data = pop, 
-                  aes(x = variable,
-                      y = estimate,
-                      ymin = conf.low,
-                      ymax = conf.high),
-                  size = 1) +
+                  alpha = 0.5) 
+  # geom_pointrange(data = pop, 
+  #                 aes(x = variable,
+  #                     y = estimate,
+  #                     ymin = conf.low,
+  #                     ymax = conf.high),
+  #                 size = 1) +
   scale_y_continuous("Posterior mean") +
   facet_wrap(~variable,
              scales = "free") +
