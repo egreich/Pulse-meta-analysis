@@ -123,8 +123,8 @@ variables <- c("ET", "WUE", "T", "Gs", "PWP",
                "NPP", "GPP", "Anet")
 
 out_list <- list()
-for(i in 1:length(variables)){
-  out_list[[i]] <- clean_vars(d,variables[i])
+for(v in variables){
+  out_list[[v]] <- clean_vars(d, v)
 }
 
 #test <- as.data.frame(out_list[2])
