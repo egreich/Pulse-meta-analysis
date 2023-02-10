@@ -43,7 +43,7 @@ df <- dfin %>%
   left_join(pulse_table) %>%
   relocate(sID, pID) %>%
   filter(Days.relative.to.pulse <= 14,
-         Days.relative.to.pulse != -1)
+         Days.relative.to.pulse > -1)
 
 # Plot
 df %>%
@@ -121,6 +121,9 @@ initslist <- list(inits(), inits(), inits())
 #load("models/01-test-Ricker/inits/inits.Rdata") #temp
 if(file.exists(initfilename)){
   load(initfilename)
+}else if(!file.exists(initfilename)){
+  saved.state <- list()
+  saved.state[[2]] <- initslist
 }
 
 # Restart from chains with lowest deviance
@@ -146,7 +149,7 @@ if(file.exists(initfilename)){
 # Initialize JAGS model
 jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = saved_state[[2]], # Or initslist if restarting from scratch
+                 inits = saved.state[[2]],
                  n.chains = 3)
 
 update(jm, 100000)
@@ -172,7 +175,7 @@ params <- c("A", "B", # coefficients for linear model
             "R2") # Model fit
 
 jm_coda <- coda.samples(jm, variable.names = params,
-                        n.iter = 15000, thin = 5)
+                        n.iter = 40000, thin = 5)
 
 # If converged, save out
 if(!dir.exists("models/01-test-Ricker/coda")) {
