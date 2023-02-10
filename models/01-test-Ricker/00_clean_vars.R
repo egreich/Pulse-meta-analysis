@@ -21,7 +21,7 @@ clean_vars <- function(dfin, varname){
   # to test uncomment
   #c("ET", "WUE", "T", "Gs", "PWP","ecosystemR", "abovegroundR", "belowgroundR","NPP", "GPP", "Anet")
   dfin = d
-  varname = "belowgroundR"
+  varname = "Anet"
   df1 <- dfin %>%
     filter(varType == varname)
   unique(df1$Units)
