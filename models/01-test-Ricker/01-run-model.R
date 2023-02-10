@@ -19,7 +19,7 @@ run_mod <- function(dfin, varname){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  varname <- "Gs"
+  varname <- "Gs" #ET, GPP, Gs
   dfin <- out_list[[varname]]
   
   
@@ -122,8 +122,8 @@ initslist <- list(inits(), inits(), inits())
 if(file.exists(initfilename)){
   load(initfilename)
 }else if(!file.exists(initfilename)){
-  saved.state <- list()
-  saved.state[[2]] <- initslist
+  saved_state <- list()
+  saved_state[[2]] <- initslist
 }
 
 # Restart from chains with lowest deviance
@@ -147,9 +147,9 @@ if(file.exists(initfilename)){
 # names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
-jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
+jm <- jags.model("models/01-test-Ricker/Mixture_model.R",#"models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = saved.state[[2]],
+                 inits = saved_state[[2]],
                  n.chains = 3)
 
 update(jm, 100000)
