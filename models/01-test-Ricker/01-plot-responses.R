@@ -1,5 +1,7 @@
 #  Create plots by study/pulse for each response variable
 
+library(tidyverse)
+
 # Load data
 load("models/01-test-Ricker/model_input.Rdata") # out_list
 
@@ -29,7 +31,7 @@ for(vn in names(out_list)) {
            Days.relative.to.pulse != -1)
   
   # Plot
-  ggplot(df, aes(x = Days.relative.to.pulse,
+  ggplot(df, aes(x = Days.relative.to.pulse + 1,
                  y = LRR)) +
     geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
      ymax = LRR + sqrt(poolVar),
