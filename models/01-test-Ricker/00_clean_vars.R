@@ -20,19 +20,12 @@ clean_vars <- function(dfin, varname){
   
   # to test uncomment
   #c("ET", "WUE", "T", "Gs", "PWP","ecosystemR", "abovegroundR", "belowgroundR","NPP", "GPP", "Anet")
-<<<<<<< HEAD
+
   dfin = d
   varname = "Anet"
   df1 <- dfin %>%
     filter(varType == varname)
   unique(df1$Units)
-=======
-   dfin = d
-   varname = "GPP"
-  # df1 <- dfin %>%
-  #   filter(varType == varname)
-  # unique(df1$Units)
->>>>>>> upstream/main
   # WUE has all same units
   # T has any different units, sometimes proportion "mmol m-2 sec-1"    "cm h-1"    "mm day-1"     "mmol m-2 d-1"      "umol g-1 s-1"      "proportion of max"  "l day-1"  
   # Gs "mmol m-2 sec-1" "mol m-2 sec-1"  "mmol g-1 s-1" 
