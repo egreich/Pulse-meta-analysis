@@ -18,7 +18,7 @@ model{
     # Alternative: Have an indicator that picks off (selects) one of the functions, 
     # rather than using a "weighted average" of the functions. If S = 0, then pick
     # Function2; if S = 1, then pick Function1:
-    mu[i] <- S[pID[i]]*Function1[i] + (1-S[pID[i]])*Function2[i]
+    # mu[i] <- S[pID[i]]*Function1[i] + (1-S[pID[i]])*Function2[i]
     
     # Function1: Ricker model
     Function1[i] <- y.peak[pID[i]]*TimePart[i]
@@ -27,7 +27,7 @@ model{
     # modeling appropriate parts on the additive log scale, then exponentiating
     # to get the predicted (e.g, mean) value
     LogPart[i] <- 1-(t[i]/t.peak[pID[i]]) + log(t[i]) - Lt.peak[pID[i]]
-    # Function1: Linear model
+    # Function2: Linear model
     Function2[i] <- bb[pID[i]] + mm[pID[i]]*t[i]
       
     # Squared differences
@@ -66,11 +66,12 @@ model{
     mm[p] ~ dnorm(mu.mm[sID[p]], tau.mm)
 
     ## Hierarchical model for mixture weight:
-    logit(w[p]) ~ dnorm(mu.w[sID[p]], tau.w)
+    logit(w[p]) <-  w1[p]
+    w1[p] ~ dnorm(mu.w[sID[p]], tau.w)
 
     # If using the "alternative" that Selects one of the functions (not a mixture); 
     # Hierarchical bernoulli prior for S:
-    S[p] ~ dbern(w[sID[p]])
+    # S[p] ~ dbern(w[sID[p]])
   }
   
 
@@ -84,7 +85,7 @@ model{
     # For mixture model option:
     mu.w[s] ~ dnorm(M.w, T.w)
     # For selection model option:
-    w[s] ~ dbeta(a.w, b.w)
+    # w[s] ~ dbeta(a.w, b.w)
   }
 
   # Priors for overall ("population") level parameters:
@@ -95,10 +96,10 @@ model{
   # For mixture model option:
   M.w ~ dnorm(0,0.0001)
   # For selection model option:
-  a.w ~ dunif(1,100)
-  b.w ~ dunif(1,100)
+  # a.w ~ dunif(1,100)
+  # b.w ~ dunif(1,100)
   # Expected probability of S = 1 (for selection model)
-  Ew <- a.w/(a.w + b.w)
+  # Ew <- a.w/(a.w + b.w)
 
   # Priors for precisions associated with study-level precisions:
   S.Lt ~ dunif(0,100)
@@ -134,15 +135,15 @@ model{
   Sigs[1] <- sig # SD among observations
   Sigs[2] <- sig.Lt.peak # SD of peak t parameter (log scale) among pulses
   Sigs[3] <- sig.y.peak # SD of peak y parameter among pulses
-  Sigs[4] <- sig.bb
-  Sigs[5] <- sig.mm
-  Sigs[6] <- sig.w # For mixture weight model
-  Sigs[7] <- S.Lt
-  Sigs[8] <- S.y
-  Sigs[9] <- S.bb
-  Sigs[10] <- S.mm
-  Sigs[11] <- S.w
-  Sigs[12] <- Ew # For selection model
+  Sigs[4] <- sig.bb # standard deviation of intercept parameter in linear model among pulses
+  Sigs[5] <- sig.mm # standard deviation of slope parameter in linear model among pulses
+  Sigs[6] <- sig.w # standard deviation for weight for mixture weight model among pulses
+  Sigs[7] <- S.Lt # SD of peak t parameter (log scale) among studies (Ricker)
+  Sigs[8] <- S.y # SD of peak y parameter among studeis (Ricker)
+  Sigs[9] <- S.bb # standard deviation of intercept parameter in linear model among studies
+  Sigs[10] <- S.mm # standard deviation of slope parameter in linear model among studies
+  Sigs[11] <- S.w # standard deviation of weight for mixture model among studies
+ # Sigs[12] <- Ew # For selection model
   
   # Dsum
   Dsum <- sum(Sqdiff[])

@@ -19,13 +19,13 @@ run_mod <- function(dfin, varname){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  varname <- "Gs" #ET, GPP, Gs
+  varname <- "ET" #ET, GPP, Gs
   dfin <- out_list[[varname]]
   
   
-  initfilename <- paste("./models/01-test-Ricker/inits/inits_", varname,".RData", sep = "")
-  jm_codafilename <- paste("./models/01-test-Ricker/coda/jm_coda_", varname,".RData", sep = "")
-  jm_repfilename <- paste("./models/01-test-Ricker/coda/jm_rep_", varname,".RData", sep = "")
+  initfilename <- paste("./models/02-Mixture-simple/inits/inits_", varname,".RData", sep = "")
+  jm_codafilename <- paste("./models/02-Mixture-simple/coda/jm_coda_", varname,".RData", sep = "")
+  jm_repfilename <- paste("./models/02-Mixture-simple/coda/jm_rep_", varname,".RData", sep = "")
   
 # Create study_pulse combination, create integer sID
 
@@ -105,22 +105,30 @@ datlist <- list(Y = df$LRR,
 
 # Initial values: manual specification to get model started
 inits <- function(){
-  list(A = rnorm(datlist$Nparam, 0, 10),
-       B = rnorm(datlist$Nparam, 0, 10),
-       lmu.swc = runif(1, 0.1, 5),
-       ltau.swc = runif(1, 0.5, 5),
-       tau.Eps.Lt = runif(1, 0, 10),
-       tau.Eps.y = runif(1, 0, 10),
+  list(bb = rnorm(datlist$Npulse, 0, 10),
+       mm = rnorm(datlist$Npulse, 0, 10),
        sig.Lt.peak = runif(1, 0, 10),
        sig.y.peak = runif(1, 0, 10),
        tau = runif(1, 0, 3))
 }
 initslist <- list(inits(), inits(), inits())
 
+inits_list <- c("bb","mm","sig","sig.Lt.peak","sig.y.peak","sig.bb","sig.mm","sig.w","S.Lt","S.y","S.bb","S.mm","S.w")
+sigs_list <- c("sig","sig.Lt.peak","sig.y.peak","sig.bb","sig.mm","sig.w","S.Lt","S.y","S.bb","S.mm","S.w")
 # Initial values: from saved state
-#load("models/01-test-Ricker/inits/inits.Rdata") #temp
 if(file.exists(initfilename)){
   load(initfilename)
+  # Make sure initials are for stochastic sds
+  for(i in 1:3){
+    for(j in 1:length(sigs_list)){
+      sig_temp <- saved_state[["initials"]][[i]][["Sigs"]][[j]]
+      saved_state[["initials"]][[i]][[sigs_list[j]]] <- sig_temp
+    }
+    saved_state[["initials"]][[i]][["sig"]] <- NULL
+    saved_state[["initials"]][[i]][["Sigs"]] <- NULL
+    saved_state[["initials"]][[i]][["S.Lt"]] <- NULL
+    saved_state[["initials"]][[i]][["S.y"]] <- NULL
+  }
 }else if(!file.exists(initfilename)){
   saved_state <- list()
   saved_state[[2]] <- initslist
@@ -147,7 +155,7 @@ if(file.exists(initfilename)){
 # names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
-jm <- jags.model("models/01-test-Ricker/Mixture_model.R",#"models/01-test-Ricker/Ricker_model2.R",
+jm <- jags.model("models/02-Mixture-simple/Mixture_model_simpler.R",
                  data = datlist,
                  inits = saved_state[[2]],
                  n.chains = 3)
@@ -155,48 +163,34 @@ jm <- jags.model("models/01-test-Ricker/Mixture_model.R",#"models/01-test-Ricker
 update(jm, 100000)
 
 # Run and monitor parameters
-# params <- c("A", "B", # coefficients for linear model
-#             "lmu.swc", "ltau.swc", # parameters for missing SWC
-#             "tau.Eps.lpeakt", "tau.Eps.lmaxy", # precision for random effects
-#             "Eps.lpeakt", "Eps.lmaxy", # pulse-level random effects
-#             "deviance", "Dsum", # model performance metrics
-#             "mu.lpeakt","mu.lmaxy", # population-level parameters on log scale
-#             "sig","tau", # sample sd and precision
-#             "sig.lpeakt", "sig.lmaxy") # sd among pulse-level log parameters
-params <- c("A", "B", # coefficients for linear model
-            "lmu.swc", "ltau.swc", # parameters for missing SWC
-            "tau.Eps.Lt", "tau.Eps.y", # precision for random effects
-            "Sigs",
-            "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
+
+params <- c("w",
+            "bb", "mm", # intercept and slope for linear model
+            "Sigs", "sig.Lt.peak", "sig.y.peak", "tau",
             "deviance", "Dsum", # model performance metrics
             "t.peak","y.peak", "Lt.peak", # pulse-level parameters
             "mu.Lt.peak", "mu.y.peak", # population-level parameters
-            "sig.Lt.peak", "sig.y.peak","tau", # sample sd and precision, sd among pulse-level log parameters
             "R2") # Model fit
 
 jm_coda <- coda.samples(jm, variable.names = params,
                         n.iter = 40000, thin = 5)
 
 # If converged, save out
-if(!dir.exists("models/01-test-Ricker/coda")) {
-  dir.create("models/01-test-Ricker/coda")
+if(!dir.exists("models/02-Mixture-simple/coda")) {
+  dir.create("models/02-Mixture-simple/coda")
 }
 
 save(jm_coda, file = jm_codafilename) #for local
 
 # Plot output
-mcmcplot(jm_coda, parms = c("deviance", "Dsum",
+mcmcplot(jm_coda, parms = c("w",
+                            "deviance", "Dsum",
                             "t.peak","y.peak", 
-                            "A", "B",
-                            "lmu.swc", "ltau.swc",
+                            "bb", "mm",
                             "Sigs",
                             "sig.Lt.peak", "sig.y.peak", "tau",
                             "R2"))
 
-caterplot(jm_coda, parms = "Estar.Lt.peak", reorder = F)
-caterplot(jm_coda, parms = "Estar.y.peak", reorder = F)
-caterplot(jm_coda, parms = "A", reorder = F)
-caterplot(jm_coda, parms = "B", reorder = F)
 
 # Check convergence
 gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
@@ -211,8 +205,7 @@ filter(gel, grepl("sig", term))
 # Save state
 
 # inits to save
-init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.Lt","tau.Eps.y", 
-               "sig.Lt.peak", "sig.y.peak", "tau")
+init_names = c("bb","mm","Sigs", "tau")
 
 # function that finds the index of variables to remove
 get_remove_index <- function(to_keep, list){
@@ -238,8 +231,8 @@ newinits[[1]]
 saved_state <- removevars(initsin = newinits, 
                           variables = remove_vars)
 saved_state[[1]]
-if(!dir.exists("models/01-test-Ricker/inits")) {
-  dir.create("models/01-test-Ricker/inits")
+if(!dir.exists("models/02-Mixture-simple/inits")) {
+  dir.create("models/02-Mixture-simple/inits")
 }
 save(saved_state, file = initfilename) #for local
 
@@ -265,5 +258,5 @@ for(i in 1:length(variables)){
   run_mod(df_var, variables[i])
 }
 
-
+temp <- coda.fast(jm_coda)
 
