@@ -19,7 +19,7 @@ run_mod <- function(dfin, varname){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  varname <- "Gs" #ET, GPP, Gs
+  varname <- "ET" #ET, GPP, Gs
   dfin <- out_list[[varname]]
   
   
@@ -92,27 +92,34 @@ datlist <- list(Y = df$LRR,
                 sID = pulse_table$sID,
                 Nobs = nrow(df),
                 Npulse = nrow(pulse_table),
-                Nparam = 5,
-                preSWC = pulse_vars$preSWC,
-                mean.SWC = mean(pulse_vars$preSWC, na.rm = TRUE),
-                sd.SWC = sd(pulse_vars$preSWC, na.rm = TRUE),
-                pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
-                MAP = as.vector(scale(pulse_vars$MAP)),
-                Yinit = pulse_vars$preVar,
-                Nstudy = max(pulse_table$sID),
-                S.Lt = 2,
-                S.y = 2)
+                # Nparam = 5,
+                # preSWC = pulse_vars$preSWC,
+                # mean.SWC = mean(pulse_vars$preSWC, na.rm = TRUE),
+                # sd.SWC = sd(pulse_vars$preSWC, na.rm = TRUE),
+                # pulse_amount = as.vector(scale(pulse_vars$pulse_amount)),
+                # MAP = as.vector(scale(pulse_vars$MAP)),
+                # Yinit = pulse_vars$preVar,
+                Nstudy = max(pulse_table$sID)
+                # S.Lt = 2,
+                # S.y = 2
+                )
 
 # Initial values: manual specification to get model started
 inits <- function(){
-  list(A = rnorm(datlist$Nparam, 0, 10),
-       B = rnorm(datlist$Nparam, 0, 10),
-       lmu.swc = runif(1, 0.1, 5),
-       ltau.swc = runif(1, 0.5, 5),
-       tau.Eps.Lt = runif(1, 0, 10),
-       tau.Eps.y = runif(1, 0, 10),
+  list(M.Lt.peak = rnorm(1, 0, 10),
+       M.y.peak = rnorm(1, 0, 10),
+       M.bb = rnorm(1, 0, 10),
+       M.mm = rnorm(1, 0, 10),
+       a.w = runif(1, 1, 10),
+       b.w = runif(1, 1, 10),
+       S.Lt = runif(1, 0, 10),
+       S.y = runif(1, 0, 10),
+       S.bb = runif(1, 0, 10),
+       S.mm = runif(1, 0, 10),
        sig.Lt.peak = runif(1, 0, 10),
        sig.y.peak = runif(1, 0, 10),
+       sig.bb = runif(1, 0, 10),
+       sig.mm = runif(1, 0, 10),
        tau = runif(1, 0, 3))
 }
 initslist <- list(inits(), inits(), inits())
@@ -147,9 +154,9 @@ if(file.exists(initfilename)){
 # names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
-jm <- jags.model("models/01-test-Ricker/Mixture_model.R",#"models/01-test-Ricker/Ricker_model2.R",
+jm <- jags.model("models/03-Selection-simple/Mixture_model_simpler.R",#"models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
-                 inits = saved_state[[2]],
+                 inits = initslist,
                  n.chains = 3)
 
 update(jm, 100000)
@@ -163,16 +170,15 @@ update(jm, 100000)
 #             "mu.lpeakt","mu.lmaxy", # population-level parameters on log scale
 #             "sig","tau", # sample sd and precision
 #             "sig.lpeakt", "sig.lmaxy") # sd among pulse-level log parameters
-params <- c("A", "B", # coefficients for linear model
-            "lmu.swc", "ltau.swc", # parameters for missing SWC
-            "tau.Eps.Lt", "tau.Eps.y", # precision for random effects
-            "Sigs",
-            "Estar.Lt.peak", "Estar.y.peak", # pulse-level random effects
-            "deviance", "Dsum", # model performance metrics
-            "t.peak","y.peak", "Lt.peak", # pulse-level parameters
-            "mu.Lt.peak", "mu.y.peak", # population-level parameters
-            "sig.Lt.peak", "sig.y.peak","tau", # sample sd and precision, sd among pulse-level log parameters
-            "R2") # Model fit
+params <- c("M.Lt.peak", "M.y.peak", "M.bb", "M.mm", "Ew", # population-level parameters
+            "mu.Lt.peak", "mu.y.peak", "mu.bb", "mu.mm", "w", # study-level parameters
+            "t.peak", "y.peak", "bb", "mm", "S", # pulse-level parameters
+            "a.w", "b.w", # selection function parameters
+            "S.Lt", "S.y", "S.bb", "S.mm", # SD parameters at study-level
+            "sig.Lt.peak", "sig.y.peak", "sig.bb", "sig.mm", # SD parameters at pulse-level
+            "tau", # observation-level precision
+            "deviance", "Dsum", "R2", # model performance metrics
+            "Sigs") 
 
 jm_coda <- coda.samples(jm, variable.names = params,
                         n.iter = 40000, thin = 5)
@@ -185,13 +191,9 @@ if(!dir.exists("models/01-test-Ricker/coda")) {
 save(jm_coda, file = jm_codafilename) #for local
 
 # Plot output
-mcmcplot(jm_coda, parms = c("deviance", "Dsum",
-                            "t.peak","y.peak", 
-                            "A", "B",
-                            "lmu.swc", "ltau.swc",
-                            "Sigs",
-                            "sig.Lt.peak", "sig.y.peak", "tau",
-                            "R2"))
+mcmcplot(jm_coda, parms = c("deviance", "Dsum", "R2",
+                            "M.Lt.peak", "M.y.peak", "M.bb", "M.mm", "Ew",
+                            "Sigs"))
 
 caterplot(jm_coda, parms = "Estar.Lt.peak", reorder = F)
 caterplot(jm_coda, parms = "Estar.y.peak", reorder = F)
@@ -211,8 +213,11 @@ filter(gel, grepl("sig", term))
 # Save state
 
 # inits to save
-init_names = c("A","B","lmu.swc","ltau.swc" ,"tau.Eps.Lt","tau.Eps.y", 
-               "sig.Lt.peak", "sig.y.peak", "tau")
+init_names = c("M.Lt.peak", "M.y.peak", "M.bb", "M.mm", 
+               "a.w", "b.w", # selection function parameters
+               "S.Lt", "S.y", "S.bb", "S.mm", # SD parameters at study-level
+               "sig.Lt.peak", "sig.y.peak", "sig.bb", "sig.mm", # SD parameters at pulse-level
+               "tau")
 
 # function that finds the index of variables to remove
 get_remove_index <- function(to_keep, list){

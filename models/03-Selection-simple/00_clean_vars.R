@@ -21,7 +21,7 @@ clean_vars <- function(dfin, varname){
   # to test uncomment
   #c("ET", "WUE", "T", "Gs", "PWP","ecosystemR", "abovegroundR", "belowgroundR","NPP", "GPP", "Anet")
    dfin = d
-   varname = "GPP"
+   varname = "ET"
   # df1 <- dfin %>%
   #   filter(varType == varname)
   # unique(df1$Units)
@@ -186,7 +186,7 @@ for(v in variables){
 
 #test <- as.data.frame(out_list[2])
 
-# Save to models/01-test-Ricker
-save(out_list, file = "models/01-test-Ricker/model_input.Rdata")
+# Save to models/03-Selection-simple
+save(out_list, file = "models/03-Selection-simple/model_input.Rdata")
 
 
