@@ -66,7 +66,7 @@ model{
     mm[p] ~ dnorm(mu.mm[sID[p]], tau.mm)
 
     ## Hierarchical model for mixture weight:
-    logit(w[p]) <-  w1[p]
+    w[p] <-  ilogit(w1[p])
     w1[p] ~ dnorm(mu.w[sID[p]], tau.w)
 
     # If using the "alternative" that Selects one of the functions (not a mixture); 
