@@ -21,7 +21,7 @@ clean_vars <- function(dfin, varname){
   # to test uncomment
   #c("ET", "WUE", "T", "Gs", "PWP","ecosystemR", "abovegroundR", "belowgroundR","NPP", "GPP", "Anet")
    dfin = d
-   varname = "GPP"
+  # varname = varname
   # df1 <- dfin %>%
   #   filter(varType == varname)
   # unique(df1$Units)
@@ -32,57 +32,106 @@ clean_vars <- function(dfin, varname){
   
   
   ##### Select var of interest #####
-  df1 <- dfin %>%
-    filter(varType == varname) %>%
+   df1 <- dfin %>%
+     filter(varType == varname) %>%
      filter(Pulse.amount > 0) %>%
-    # label unitDuration, convert to Days since pulse
-    mutate(unitDuration = case_when(grepl("^mm day-1$", Units) ~ "integrated",
-                                    grepl("mmol m-2 sec-1", Units) ~ "instantaneous",
-                                    grepl("mmol m-2 d-1", Units) ~ "integrated",
-                                    grepl("^g m-2 day-1$", Units) ~ "integrated",
-                                    grepl("^umol m-2 sec-1$", Units) ~ "instantaneous"),
-           Mean = case_when(grepl("^mol m-2 sec-1$", Units) ~ Mean,
+     # label unitDuration, convert to Days since pulse
+     mutate(unitDuration = case_when(grepl("^mm day-1$", Units) ~ "integrated",
+                                     grepl("mmol m-2 sec-1", Units) ~ "instantaneous",
+                                     grepl("mmol m-2 d-1", Units) ~ "integrated",
+                                     grepl("^g m-2 day-1$", Units) ~ "integrated",
+                                     grepl("^umol m-2 sec-1$", Units) ~ "instantaneous"),
+            Mean = case_when(grepl("^mol m-2 sec-1$", Units) ~ Mean,
                              grepl("^mmol m-2 sec-1$", Units) ~ Mean,
                              grepl("^mmol g-2 s-1$", Units) ~ Mean),
-           Units = "mmol m-2 sec-1",
-           Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
-                                              Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
-  
-  if(varname == "ET"){
-    df1 <- dfin %>%
-      filter(varType == varname) %>%
-      filter(Pulse.amount > 0) %>%
-      # label unitDuration, convert to Days since pulse
-      mutate(unitDuration = case_when(grepl("^mm day-1$", Units) ~ "integrated",
-                                      grepl("mmol m-2 sec-1", Units) ~ "instantaneous",
-                                      grepl("mmol m-2 d-1", Units) ~ "integrated"),
-             Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
-                                                Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
-  }
-  if(varname == "GPP"){
-    df1 <- dfin %>%
-      filter(varType == varname) %>%
-      filter(Pulse.amount > 0) %>%
-      # label unitDuration, convert to Days since pulse
-      mutate(unitDuration = case_when(grepl("^g m-2 day-1$", Units) ~ "integrated",
-                                      grepl("^umol m-2 sec-1$", Units) ~ "instantaneous"),
-             Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
-                                                Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
-  }
-  if(varname == "Gs"){
-    # Removing paper 964_1 and 964_2 that reported mass-based stomatal conductance
-    df1 <- dfin %>%
-      filter(varType == varname, Study.ID %nin% c("964_1", "964_2")) %>%
-      filter(Pulse.amount > 0) %>%
-      # label unitDuration, convert to Days since pulse
-      mutate(unitDuration = "instantaneous",
-             Mean = case_when(grepl("^mol m-2 sec-1$", Units) ~ ud.convert(Mean, "mol", "mmol"),
-                              grepl("^mmol m-2 sec-1$", Units) ~ Mean),
-             Units = "mmol m-2 sec-1",
-             Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
-                                                Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
-  }
-  
+            Units = "mmol m-2 sec-1",
+            Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                               Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   
+   if(varname == "ET"){
+     df1 <- dfin %>%
+       filter(varType == varname) %>%
+       filter(Pulse.amount > 0) %>%
+       # label unitDuration, convert to Days since pulse
+       mutate(unitDuration = case_when(grepl("^mm day-1$", Units) ~ "integrated",
+                                       grepl("mmol m-2 sec-1", Units) ~ "instantaneous",
+                                       grepl("mmol m-2 d-1", Units) ~ "integrated"),
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
+   if(varname == "GPP"){
+     df1 <- dfin %>%
+       filter(varType == varname) %>%
+       filter(Pulse.amount > 0) %>%
+       # label unitDuration, convert to Days since pulse
+       mutate(unitDuration = case_when(grepl("^g m-2 day-1$", Units) ~ "integrated",
+                                       grepl("^umol m-2 sec-1$", Units) ~ "instantaneous"),
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
+   if(varname == "Gs"){
+     # Removing paper 964_1 and 964_2 that reported mass-based stomatal conductance
+     df1 <- dfin %>%
+       filter(varType == varname, Study.ID %nin% c("964_1", "964_2")) %>%
+       filter(Pulse.amount > 0) %>%
+       # label unitDuration, convert to Days since pulse
+       mutate(unitDuration = "instantaneous",
+              Mean = case_when(grepl("^mol m-2 sec-1$", Units) ~ ud.convert(Mean, "mol", "mmol"),
+                               grepl("^mmol m-2 sec-1$", Units) ~ Mean),
+              Units = "mmol m-2 sec-1",
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
+   if(varname == "PWP"){
+     df1 <- dfin %>%
+       filter(varType == varname) %>%
+       # label unitDuration, convert to Days since pulse
+       mutate(unitDuration = "instantaneous",
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
+   if(varname == "ecosystemR"){
+     df1 <- dfin %>%
+       filter(varType == varname) %>%
+       # label unitDuration, convert to Days since pulse
+       # Assume hourly rate holds constant, convert to daily value
+       mutate(unitDuration = case_when(grepl("^mg m-2 h-1$", Units) ~ "integrated",
+                                       grepl("^g m-2 day-1$", Units) ~ "integrated",
+                                       grepl("^umol m-2 sec-1$", Units) ~ "instantaneous"),
+              Mean = case_when(grepl("^mg m-2 h-1$", Units) ~ ud.convert(Mean, "mg h^-1", "g d^-1"),
+                               grepl("^g m-2 day-1$", Units) ~ Mean,
+                               grepl("^mmol m-2 sec-1$", Units) ~ Mean),
+              Units = case_when(grepl("^mg m-2 h-1$", Units) ~ "g m-2 day-1",
+                                grepl("^g m-2 day-1$", Units) ~ Units,
+                                grepl("^umol m-2 sec-1$", Units) ~ Units),
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
+   if(varname == "abovegroundR"){
+     df1 <- dfin %>%
+       filter(varType == varname) %>%
+       # label unitDuration, convert to Days since pulse
+       mutate(unitDuration = "instantaneous",
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
+   if(varname == "belowgroundR"){
+     df1 <- dfin %>%      
+       filter(varType == varname) %>%
+       # label unitDuration, convert to Days since pulse
+       # Assume hourly rate holds constant, convert to daily value
+       mutate(unitDuration = case_when(grepl("^mg m-2 h-1$", Units) ~ "integrated",
+                                       grepl("^g m-2 hr-1$", Units) ~ "integrated",
+                                       grepl("^umol m-2 sec-1$", Units) ~ "instantaneous"),
+              Mean = case_when(grepl("^mg m-2 h-1$", Units) ~ ud.convert(Mean, "mg", "g"),
+                               grepl("^g m-2 hr-1$", Units) ~ Mean,
+                               grepl("^umol m-2 sec-1$", Units) ~ Mean),
+              Units = case_when(grepl("^mg m-2 h-1$", Units) ~ "g m-2 h-1",
+                                grepl("^g m-2 hr-1$", Units) ~ "g m-2 h-1",
+                                grepl("^umol m-2 sec-1", Units) ~ Units),
+              Days.relative.to.pulse = case_when(Time.relative.to.pulse.unit == "day" ~ Time.relative.to.pulse,
+                                                 Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day")))
+   }
   # Check units of response and time
   #unique(df1$Units)
   #count(df, Units)

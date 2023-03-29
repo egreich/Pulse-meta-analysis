@@ -27,7 +27,7 @@ run_mod <- function(dfin, varname){
   jm_codafilename <- paste("./models/01-test-Ricker/coda/jm_coda_", varname,".RData", sep = "")
   jm_repfilename <- paste("./models/01-test-Ricker/coda/jm_rep_", varname,".RData", sep = "")
   
-# Create study_pulse combination, create integer sID
+  # Create study_pulse combination, create integer sID
 
 pulse_table <- dfin %>%
   expand(nesting(Study.ID, Pulse.ID)) %>%
@@ -147,7 +147,7 @@ if(file.exists(initfilename)){
 # names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
-jm <- jags.model("models/01-test-Ricker/Mixture_model.R",#"models/01-test-Ricker/Ricker_model2.R",
+jm <- jags.model("models/01-test-Ricker/Ricker_model2.R",
                  data = datlist,
                  inits = saved_state[[2]],
                  n.chains = 3)
@@ -175,7 +175,7 @@ params <- c("A", "B", # coefficients for linear model
             "R2") # Model fit
 
 jm_coda <- coda.samples(jm, variable.names = params,
-                        n.iter = 40000, thin = 5)
+                        n.iter = 10000, thin = 5)
 
 # If converged, save out
 if(!dir.exists("models/01-test-Ricker/coda")) {
