@@ -19,7 +19,7 @@ run_mod <- function(dfin, varname){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  varname <- "ET" #ET, GPP, Gs
+  varname <- "Gs" #ET, GPP, Gs
   dfin <- out_list[[varname]]
   
   
@@ -122,6 +122,28 @@ inits <- function(){
        sig.mm = runif(1, 0, 10),
        tau = runif(1, 0, 3))
 }
+# Initial values: manual specification to get model started, temp testing different heirarchical structure
+inits <- function(){
+  list(#M.Lt.peak = rnorm(1, 0, 10),
+       #M.y.peak = rnorm(1, 0, 10),
+      mu.Lt.peak = rnorm(datlist$Nstudy,0,10),
+      mu.y.peak = rnorm(datlist$Nstudy,0,10),
+       #M.bb = rnorm(1, 0, 10),
+       #M.mm = rnorm(1, 0, 10),
+       mu.bb = rnorm(datlist$Nstudy,0,10),
+       mu.mm = rnorm(datlist$Nstudy,0,10),
+       a.w = runif(1, 1, 10),
+       b.w = runif(1, 1, 10),
+       S.Lt = runif(1, 0, 10),
+       S.y = runif(1, 0, 10),
+       S.bb = runif(1, 0, 10),
+       S.mm = runif(1, 0, 10),
+       sig.Lt.peak = runif(1, 0, 10),
+       sig.y.peak = runif(1, 0, 10),
+       sig.bb = runif(1, 0, 10),
+       sig.mm = runif(1, 0, 10),
+       tau = runif(1, 0, 3))
+}
 initslist <- list(inits(), inits(), inits())
 
 # Initial values: from saved state
@@ -154,7 +176,7 @@ if(file.exists(initfilename)){
 # names(initslist[[1]]) %in% names(ss[[1]])
 
 # Initialize JAGS model
-jm <- jags.model("models/03-Selection-simple/Mixture_model_simpler.R",#"models/01-test-Ricker/Ricker_model2.R",
+jm <- jags.model("models/03-Selection-simple/Emma_test_selection.R",#"models/03-Selection-simple/Mixture_model_simpler.R",
                  data = datlist,
                  inits = initslist,
                  n.chains = 3)
@@ -191,9 +213,9 @@ if(!dir.exists("models/01-test-Ricker/coda")) {
 save(jm_coda, file = jm_codafilename) #for local
 
 # Plot output
-mcmcplot(jm_coda, parms = c("deviance", "Dsum", "R2",
-                            "M.Lt.peak", "M.y.peak", "M.bb", "M.mm", "Ew",
-                            "Sigs"))
+mcmcplot(jm_coda, parms = params)
+
+caterplot(jm_coda, parms = "S", reorder = F)
 
 caterplot(jm_coda, parms = "Estar.Lt.peak", reorder = F)
 caterplot(jm_coda, parms = "Estar.y.peak", reorder = F)
