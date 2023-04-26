@@ -11,6 +11,7 @@ data_clean/*.csv
 data_clean/tables/*.csv
 data_raw/
 plots/
+models/plots/
 !data_clean/worldclim_vars.csv
 
 # Suppress data files and rsconnect folder in pulse_app
@@ -20,6 +21,15 @@ pulse_app/rsconnect/
 # Suppress extraction folders
 extractions/
 
-# Suppress model codas
+# Suppress model codas and convergence files
 models/01-test-Ricker/coda
-models/01-test-Ricker/plots
+models/01-Ricker-simple/coda
+models/01-Ricker-simple/convergence
+models/02-Linear-simple/coda
+models/02-Linear-simple/convergence
+models/03-Selection-simple/coda
+models/03-Selection-simple/convergence
+models/04-Mixture-simple/coda
+models/04-Mixture-simple/convergence
+
+
