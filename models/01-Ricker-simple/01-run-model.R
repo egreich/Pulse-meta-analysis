@@ -12,7 +12,8 @@ library(mcmcplots)
 library(postjags)
 library(udunits2)
 library(jagsUI)
-library(jagsUI)
+# Load self-made functions
+source("./scripts/functions.R")
 
 # Load data
 load("models/model_input.Rdata") # out_list
@@ -54,26 +55,6 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   df <- dfin %>%
     left_join(pulse_table) %>%
     relocate(sID, pID)
-  
-  # Plot
-  # df %>%
-  #   ggplot(aes(x = Days.relative.to.pulse + 1,
-  #              y = LRR)) +
-  #   geom_point(aes(color = as.factor(sID))) +
-  #   geom_hline(yintercept = 0) +
-  #   theme_bw()
-  
-  # ggplot(df, aes(x = Days.relative.to.pulse + 1,
-  #                y = LRR)) +
-  #   # geom_errorbar(aes(ymin = LRR - sqrt(poolVar),
-  #   #  ymax = LRR + sqrt(poolVar),
-  #   #  color = as.factor(sID)),
-  #   # width = 0) +
-  #   geom_point(aes(color = as.factor(sID))) +
-  #   geom_hline(yintercept = 0, lty = 2) +
-  #   facet_wrap(~pID, scales = "free_y") +
-  #   theme_bw() +
-  #   guides(color = "none")
   
   
   # Prepare data list
@@ -174,24 +155,8 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
                  "sig.Lt.peak","sig.y.peak",
                  "tau")
   
-  # function that finds the index of variables to remove
-  get_remove_index <- function(to_keep, list){
-    list <- list[list != "deviance"] # remove deviance
-    list <- sort(list, method = "radix")
-    out_list <- c()
-    for(j in c(1:length(list))){
-      if(list[j] %in% to_keep){
-        out_list[j] = NA
-      } else{
-        out_list[j] = j
-      }
-    }
-    out_list <- out_list[!is.na(out_list)]
-    out_list
-  }
-  
   # use get_remove_index function to find which variables to remove
-  remove_vars = get_remove_index(init_names, params)
+  remove_vars = get_remove_index(init_names, params, type="jagsUI")
   
   newinits <- initfind(jm_coda, OpenBUGS = FALSE)
   newinits[[1]]
@@ -214,6 +179,14 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
     save(saved_state, file = initfilename) #for local
   }
   
+  # If converged, run and save replicated data
+  jm_rep <- update(jagsui, parameters.to.save = "Y.rep",
+                   n.iter = 15000, n.thin = 5)
+  
+  if(overwrite==T){
+    save(jm_rep, file = jm_repfilename) #for local
+  }
+  
 }
 
 ######## Use function to run model #########
@@ -224,7 +197,7 @@ variables <- c("ET", "T", "Gs", "PWP",
                "ecosystemR","belowgroundR",
                "NPP", "GPP", "Anet")
 
-for(i in 1:length(variables)){
+for(i in 6:6){ #i in 1:length(variables)
   df_var <- as.data.frame(out_list[i])
   run_mod(df_var, variables[i], overwrite = T)
 }
