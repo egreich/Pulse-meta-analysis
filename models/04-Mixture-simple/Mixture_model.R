@@ -60,7 +60,7 @@ model{
     mm[p] ~ dnorm(mu.mm[sID[p]], tau.mm)
     
     ## Hierarchical model for mixture weight, based on a beta distribution:
-    w[p] ~ dbeta(a.w[sID[p]], a.w[sID[p]])
+    w[p] ~ dunif(0,1) # dbeta(a.w[sID[p]], a.w[sID[p]]) # temp
   }
   
   # Independent priors for study-level parameters (root nodes). Again, 
@@ -76,10 +76,11 @@ model{
     mu.mm[s] ~ dnorm(0, 0.0001)
     # For mixture weight hyperparameters, truncate at 1 to avoid errors
     # with the pulse-level beta prior.
-    a.w[s] ~ dunif(1,100)
-    b.w[s] ~ dunif(1,100)
+    #a.w[s] ~ dunif(1,100) # temp
+    #b.w[s] ~ dunif(1,100) # temp
     # Expected study-level mixture weight:
-    mu.w[s] <- a.w[s]/(a.w[s]+b.w[s])
+    #mu.w[s] <- a.w[s]/(a.w[s]+b.w[s]) # temp
+    mu.w[s] <- mean(w[]) # temp
   }
   
   # Compute overall effects or parameters (averaged across all studies)

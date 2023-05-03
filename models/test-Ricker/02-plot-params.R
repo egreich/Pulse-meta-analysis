@@ -7,7 +7,7 @@ library(tidyr)
 library(ggplot2)
 
 # Load data and coda
-load("models/01-test-Ricker/model_input.Rdata")  # List of all variable dataframes
+load("models/model_input.Rdata")  # List of all variable dataframes
 # Var names: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 
 # 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
 
@@ -15,8 +15,8 @@ varname <- "ET"
 dfin <- out_list[[varname]]
 
 # Create file names
-jm_codafilename <- paste("./models/01-test-Ricker/coda/jm_coda_", varname,".RData", sep = "")
-jm_repfilename <- paste("./models/01-test-Ricker/coda/jm_rep_", varname,".RData", sep = "")
+jm_codafilename <- paste("./models/01-Ricker-simple/coda/jm_coda_", varname,".RData", sep = "")
+jm_repfilename <- paste("./models/01-Ricker-simple/coda/jm_rep_", varname,".RData", sep = "")
 
 
 # load("models/01-test-Ricker/inputET.Rdata") # et3
@@ -164,7 +164,7 @@ ggplot() +
                       ymax = conf.high,
                       color = factor(pulse)),
                   position = position_dodge(width = 1),
-                  alpha = 0.5) 
+                  alpha = 0.5) +
   # geom_pointrange(data = pop, 
   #                 aes(x = variable,
   #                     y = estimate,

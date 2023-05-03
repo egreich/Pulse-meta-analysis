@@ -12,6 +12,8 @@ library(mcmcplots)
 library(postjags)
 library(udunits2)
 library(jagsUI)
+# Load self-made functions
+source("./scripts/functions.R")
 
 # Load data
 load("models/model_input.Rdata") # out_list
@@ -19,8 +21,8 @@ load("models/model_input.Rdata") # out_list
 run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # Uncomment the next two lines to test the function line-by-line
-  # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  varname <- "Gs" #ET, GPP, Gs
+  # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
+  #varname <- "Gs" #ET, GPP, Gs
   dfin <- out_list[[varname]]
   
   
@@ -177,30 +179,11 @@ if(lowdev == T){
 }
 
 # inits to save
-init_names = c("M.Lt.peak", "M.y.peak", "M.bb", "M.mm", 
-               "a.w", "b.w", # selection function parameters
-               "S.Lt", "S.y", "S.bb", "S.mm", # SD parameters at study-level
-               "sig.Lt.peak", "sig.y.peak", "sig.bb", "sig.mm", # SD parameters at pulse-level
-               "tau")
+init_names = names(initslist[[1]])
 
-# function that finds the index of variables to remove
-get_remove_index <- function(to_keep, list){
-  list <- list[list != "deviance"] # remove deviance
-  list <- sort(list, method = "radix")
-  out_list <- c()
-  for(j in c(1:length(list))){
-    if(list[j] %in% to_keep){
-      out_list[j] = NA
-    } else{
-      out_list[j] = j
-    }
-  }
-  out_list <- out_list[!is.na(out_list)]
-  out_list
-}
 
 # use get_remove_index function to find which variables to remove
-remove_vars = get_remove_index(init_names, params)
+remove_vars = get_remove_index(init_names, params, type="jagsUI")
 
 newinits <- initfind(jm_coda, OpenBUGS = FALSE)
 newinits[[1]]
@@ -220,6 +203,14 @@ if(!dir.exists("models/03-Selection-simple/inits")) {
 }
 save(saved_state, file = initfilename) #for local
 
+# If converged, run and save replicated data
+jm_rep <- update(jagsui, parameters.to.save = "Y.rep",
+                 n.iter = 15000, n.thin = 5)
+
+if(overwrite==T){
+  save(jm_rep, file = jm_repfilename) #for local
+}
+
 }
 
 ######## Use function to run model #########
@@ -229,7 +220,7 @@ variables <- c("ET", "T", "Gs", "PWP",
                "ecosystemR","belowgroundR",
                "NPP", "GPP", "Anet")
 
-for(i in 3:length(variables)){
+for(i in c(1:length(variables))){
   df_var <- as.data.frame(out_list[i])
   run_mod(df_var, variables[i], overwrite = T)
 }

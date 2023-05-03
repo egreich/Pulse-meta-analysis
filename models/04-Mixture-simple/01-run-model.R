@@ -12,6 +12,8 @@ library(mcmcplots)
 library(postjags)
 library(udunits2)
 library(jagsUI)
+# Load self-made functions
+source("./scripts/functions.R")
 
 # Load data
 load("models/model_input.Rdata") # out_list
@@ -24,7 +26,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # Uncomment the next two lines to test the function line-by-line
   # Index Key: 1:"ET", 2:"WUE", 3:"T", 4:"Gs", 5:"PWP", 6:"ecosystemR", 7:"abovegroundR", 8:"belowgroundR", 9:"NPP", 10:"GPP", 11:"Anet"
-  varname <- "ET" #ET, GPP, Gs
+  #varname <- "ET" #ET, GPP, Gs
   dfin <- out_list[[varname]]
   
   initfilename <- paste("./models/04-Mixture-simple/inits/inits_", varname,".RData", sep = "")
@@ -59,6 +61,21 @@ df <- dfin %>%
   relocate(sID, pID)
 
 
+# Look at the linear R2 fit, if the fit is really good, set initial w=0
+fit_linear <- c()
+pulses <- unique(df$pID)
+for(i in c(1:length(pulses))){
+  #print(i)
+  df_onepulse <- df %>%
+    filter(pID == pulses[i])
+  
+  lm_onepulse <- lm(LRR ~ Days.relative.to.pulse, data = df_onepulse)
+  
+  fit_linear[i] <- summary(lm_onepulse)$r.squared
+  
+}
+
+
 # Prepare data list
 datlist <- list(Y = df$LRR,
                 t = df$Days.relative.to.pulse + 1,
@@ -77,6 +94,7 @@ inits <- function(){
        mu.y.peak = rnorm(datlist$Nstudy,log(mean(df$Mean)),2),
        mu.bb = rnorm(datlist$Nstudy,0,10),
        mu.mm = rnorm(datlist$Nstudy,0,10),
+       #w = runif(datlist$Npulse,0,1),
        sig.Lt.peak = .5,
        sig.y.peak = 3,
        sig.bb = 3,
@@ -102,18 +120,21 @@ if(file.exists(rickerinitfilename)){
     initslist[[i]][["mu.mm"]] <- linearlist[[i]][["mu.mm"]] 
     initslist[[i]][["sig.bb"]] <- linearlist[[i]][["sig.bb"]]
     initslist[[i]][["sig.mm"]] <- linearlist[[i]][["sig.mm"]]
+    
+    # add w initial
+    initslist[[i]][["w"]] <- runif(datlist$Npulse,0,1)
   }
 
 }
 
 
 # Initial values: from saved state (option 3) # temp
-if(file.exists(initfilename)){
-  load(initfilename)
-  initslist <- saved_state[[2]]
-}else if(!file.exists(initfilename)){
-  initslist <- initslist
-}
+# if(file.exists(initfilename)){
+#   load(initfilename)
+#   initslist <- saved_state[[2]]
+# }else if(!file.exists(initfilename)){
+#   initslist <- initslist
+# }
 
 
 # Run and monitor parameters
@@ -129,7 +150,7 @@ params <- c("w",
             "M.w", # overall-level w
             "mu.w", # study-level w
             "deviance", "Dsum", # model performance metrics
-            "R2", "Y.rep") # Model fit
+            "R2") # Model fit
 
 
 # Run model with jagsui package
@@ -139,8 +160,8 @@ jagsui <- jags(data = datlist,
                parameters.to.save = params,
                n.chains = 3,
                n.adapt = 1000,
-               n.thin = 5,
-               n.iter = 40000,
+               n.thin = 10,
+               n.iter = 100000,
                parallel = TRUE)
 
 jm_coda <- jagsui$samples
@@ -185,29 +206,10 @@ if(dev1 == dev_min){
 }
 
 # inits to save
-init_names = c("M.Lt.peak","M.y.peak",
-               "M.bb", "M.mm",
-               "M.w",
-               "Sigs", "tau")
-
-# function that finds the index of variables to remove
-get_remove_index <- function(to_keep, list){
-  list <- list[list != "deviance"] # remove deviance
-  list <- sort(list, method = "radix")
-  out_list <- c()
-  for(j in c(1:length(list))){
-    if(list[j] %in% to_keep){
-      out_list[j] = NA
-    } else{
-      out_list[j] = j
-    }
-  }
-  out_list <- out_list[!is.na(out_list)]
-  out_list
-}
+init_names = names(initslist[[1]])
 
 # use get_remove_index function to find which variables to remove
-remove_vars = get_remove_index(init_names, params)
+remove_vars = get_remove_index(init_names, params, type="jagsUI")
 
 newinits <- initfind(jm_coda, OpenBUGS = FALSE)
 newinits[[1]]
@@ -228,6 +230,14 @@ if(!dir.exists("models/04-Mixture-simple/inits")) {
 
 if(overwrite==T){
   save(saved_state, file = initfilename) #for local
+}
+
+# If converged, run and save replicated data
+jm_rep <- update(jagsui, parameters.to.save = "Y.rep",
+                 n.iter = 15000, n.thin = 5)
+
+if(overwrite==T){
+  save(jm_rep, file = jm_repfilename) #for local
 }
 
 

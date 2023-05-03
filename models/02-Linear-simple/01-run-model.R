@@ -12,6 +12,8 @@ library(mcmcplots)
 library(postjags)
 library(udunits2)
 library(jagsUI)
+# Load self-made functions
+source("./scripts/functions.R")
 
 # Load data
 load("models/model_input.Rdata") # out_list
@@ -23,7 +25,7 @@ load("models/model_input.Rdata") # out_list
 run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # Uncomment the next line to test the function line-by-line
-  #varname <- "belowgroundR" #ET, GPP, Gs
+  #varname <- "Gs" #ET, GPP, Gs
   
   dfin <- out_list[[varname]]
   
@@ -147,19 +149,6 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
            dir = mcmcfoldername,
            filename = mcmcfilename)
   
-  # library(broom.mixed)
-  # foo <- broom.mixed::tidyMCMC(jm_coda, conf.int = T, conf.method = "HPDinterval")
-  # 
-  # # Check convergence
-  # gel <- data.frame(gelman.diag(jm_coda, multivariate = FALSE)$psrf) %>%
-  #   tibble::rownames_to_column(var = "term")
-  # 
-  # filter(gel, grepl("Dsum", term))
-  # filter(gel, grepl("^y.peak", term))
-  # filter(gel, grepl("^t.peak", term))
-  # filter(gel, grepl("mu\\.", term))
-  # filter(gel, grepl("sig", term))
-  
   # Save state
   
   if(lowdev == T){
@@ -183,24 +172,8 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
                  "sig.bb","sig.mm",
                  "tau")
   
-  # function that finds the index of variables to remove
-  get_remove_index <- function(to_keep, list){
-    list <- list[list != "deviance"] # remove deviance
-    list <- sort(list, method = "radix")
-    out_list <- c()
-    for(j in c(1:length(list))){
-      if(list[j] %in% to_keep){
-        out_list[j] = NA
-      } else{
-        out_list[j] = j
-      }
-    }
-    out_list <- out_list[!is.na(out_list)]
-    out_list
-  }
-  
   # use get_remove_index function to find which variables to remove
-  remove_vars = get_remove_index(init_names, params)
+  remove_vars = get_remove_index(init_names, params, type="jagsUI")
   
   newinits <- initfind(jm_coda, OpenBUGS = FALSE)
   newinits[[1]]
@@ -224,8 +197,8 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   }
   
   # If converged, run and save replicated data
-  jm_rep <- coda.samples(jm, variable.names = "Y.rep",
-                         n.iter = 15000, thin = 5)
+   jm_rep <- update(jagsui, parameters.to.save = "Y.rep",
+                          n.iter = 15000, n.thin = 5)
   
   if(overwrite==T){
     save(jm_rep, file = jm_repfilename) #for local
