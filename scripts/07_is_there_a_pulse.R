@@ -1,4 +1,4 @@
-### Determine which model fits which pulse the best
+### Save coda output in convenient format for clustering analysis
 
 library(dplyr)
 library(tidyr)
@@ -152,7 +152,7 @@ ggplot() +
 pulse_table2 %>%
   filter(modeltype == "mixture_fixed_w") %>%
   filter(param %nin% c("Dsum", "Dsump")) %>%
-  ggplot(aes(x=pID, y=mean, color=modeltype)) +
+  ggplot(aes(x=pID, y=mean)) +
   geom_pointrange(aes(ymin=pc2.5, ymax=pc97.5), position = position_dodge(width = 1), fatten = .5, alpha=.5) +
   facet_grid(param ~ varType, scales="free") +
   #scale_color_continuous(type = "viridis") +
@@ -229,6 +229,20 @@ df_no_pulse <- pulse_table_final %>%
 save(df_all, file = "data_output/df_all.Rdata")
 save(df_pulse, file = "data_output/df_pulse.Rdata")
 save(df_no_pulse, file = "data_output/df_no_pulse.Rdata")
+
+
+df_pulse %>%
+  ggplot(aes(x=pID, y=mean)) +
+  geom_pointrange(aes(ymin=pc2.5, ymax=pc97.5), position = position_dodge(width = 1), fatten = .5, alpha=.5) +
+  facet_grid(param ~ varType, scales="free") +
+  ylim(0,20) +
+  #scale_color_continuous(type = "viridis") +
+  theme_bw() +
+  theme(legend.position = "right",
+        legend.text=element_text(size=12),
+        text = element_text(size=12),
+        axis.text.x = element_text(size = 11, angle = 90, vjust = 0.6, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
 
 
 
