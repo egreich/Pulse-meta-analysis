@@ -57,4 +57,20 @@ get_index <- function(jagsUI_object){
   out
 }
 
+# function that will count the # of falses
+count_f <- function(obj1,obj2,obj3,obj4){
+  n = 0
+  temp_list <- c(obj1,obj2,obj3,obj4)
+  for(i in 1:4){
+    if(temp_list[i] == F){
+      n = n + 1
+    }else{
+      n = n + 0
+    }
+  }
+  return(n)
+}
+
+
+
 

@@ -54,7 +54,8 @@ pulse_table <- dfin %>%
 # Join with full table
 df <- dfin %>%
   left_join(pulse_table) %>%
-  relocate(sID, pID)
+  relocate(sID, pID)%>%
+  arrange(pID)
 
 # Prepare data list
 datlist <- list(Y = df$LRR,

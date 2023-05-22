@@ -1,4 +1,4 @@
-### Initial Ricker model for ET subset of response variables
+### Script to run linear model
 
 if(!"postjags" %in% installed.packages()) {
   devtools::install_github("fellmk/PostJAGS/postjags")
@@ -55,14 +55,32 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   # Join with full table
   df <- dfin %>%
     left_join(pulse_table) %>%
-    relocate(sID, pID)
+    relocate(sID, pID) %>%
+    arrange(pID)
   
+  # Find observation start and stop values for each pulse
+  # These will be used to calculate Dsum for each pID for model comparison
+  df_starts <- df %>%
+    mutate(startID = rownames(.)) %>%
+    select(startID, everything()) %>%
+    group_by(rleid = with(rle(pID), rep(seq_along(lengths), lengths))) %>%
+    slice(1)
+  df_starts$startID <- as.numeric(df_starts$startID)
+  starts <- df_starts$startID
+  
+  stops <- starts - 1
+  stops <- stops[2:length(stops)]
+  stops <- c(stops, nrow(df))
+  
+  start_stops <- data.frame(startID = starts, stopID = stops)
   
   # Prepare data list
   datlist <- list(Y = df$LRR,
                   t = df$Days.relative.to.pulse + 1,
                   pID = df$pID,
                   sID = pulse_table$sID,
+                  startID = start_stops$startID,
+                  stopID = start_stops$stopID,
                   Nobs = nrow(df),
                   Npulse = nrow(pulse_table),
                   Nstudy = length(unique(pulse_table$sID))
@@ -112,7 +130,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
               "M.bb", "M.mm",
               "mu.bb", "mu.mm",
               "sig.bb", "sig.mm",
-              "deviance", "Dsum", # model performance metrics
+              "deviance", "Dsum", "Dsump", # model performance metrics
               "R2") # Model fit
   
   # Run model with jagsui package
