@@ -170,9 +170,9 @@ df_output_longer <- bind_rows(df_model_longer) # convert list into a dataframe
 ### df_output_longer pulse-level parameters connected to pulse-level data
 pulse_table2 <- bind_rows(pulse_table)
 df_output_longer2 <- df_output_longer %>%
-  filter(param %in% c("t.peak","y.peak","bb", "mm","w","S")) %>%
+  filter(param %in% c("t.peak","y.peak","bb", "mm","w","S","Dsum","Dsump")) %>%
   rename(pID = ID) %>%
-  mutate(converged = ifelse(gel<1.1, "yes", "no"))
+  mutate(converged = ifelse(gel<1.4, "yes", "no"))
   
 # remove w's for selection model
 row_index <- c()
@@ -244,7 +244,7 @@ pulse_table2 %>%
         plot.title = element_text(hjust = 0.5))
 
 pulse_table2 %>%
-filter(param %in% c("w", "S")) %>%
+#filter(param %in% c("w", "S")) %>%
 ggplot() +
   geom_point(aes(x=pID, y=param, color= converged), alpha=0.5, size=1) +
   facet_grid(modeltype~varType, scales="free") +
@@ -258,7 +258,7 @@ ggplot() +
         plot.title = element_text(hjust = 0.5))
 
 pulse_table2 %>%
-  filter(modeltype != "selection") %>%
+  #filter(modeltype != "selection") %>%
   ggplot(aes(x=pID, y=mean, color=modeltype)) +
   geom_pointrange(aes(ymin=pc2.5, ymax=pc97.5), position = position_dodge(width = 1), fatten = .5, alpha=.5) +
   facet_grid(param ~ varType, scales="free") +
@@ -285,14 +285,7 @@ pulse_table2 %>%
         #legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
 
-
-
-
-
-
-
-
-
+################## Look at deterministic mixture model
 
 
 

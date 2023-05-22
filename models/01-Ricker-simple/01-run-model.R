@@ -1,4 +1,4 @@
-### Initial Ricker model for ET subset of response variables
+### Script to run Ricker model
 
 if(!"postjags" %in% installed.packages()) {
   devtools::install_github("fellmk/PostJAGS/postjags")
@@ -54,7 +54,24 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   # Join with full table
   df <- dfin %>%
     left_join(pulse_table) %>%
-    relocate(sID, pID)
+    relocate(sID, pID)%>%
+    arrange(pID)
+  
+  # Find observation start and stop values for each pulse
+  # These will be used to calculate Dsum for each pID for model comparison
+  df_starts <- df %>%
+    mutate(startID = rownames(.)) %>%
+    select(startID, everything()) %>%
+    group_by(rleid = with(rle(pID), rep(seq_along(lengths), lengths))) %>%
+    slice(1)
+  df_starts$startID <- as.numeric(df_starts$startID)
+  starts <- df_starts$startID
+  
+  stops <- starts - 1
+  stops <- stops[2:length(stops)]
+  stops <- c(stops, nrow(df))
+  
+  start_stops <- data.frame(startID = starts, stopID = stops)
   
   
   # Prepare data list
@@ -62,6 +79,8 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
                   t = df$Days.relative.to.pulse + 1,
                   pID = df$pID,
                   sID = pulse_table$sID,
+                  startID = start_stops$startID,
+                  stopID = start_stops$stopID,
                   Nobs = nrow(df),
                   Npulse = nrow(pulse_table),
                   Nstudy = length(unique(pulse_table$sID)),
@@ -93,7 +112,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   params <- c("Sigs", "sig.Lt.peak", "sig.y.peak", "tau",
               "M.Lt.peak","M.y.peak",
-              "deviance", "Dsum", # model performance metrics
+              "deviance", "Dsum", "Dsump", # model performance metrics
               "t.peak","y.peak", "Lt.peak", # pulse-level parameters
               "mu.Lt.peak", "mu.y.peak", # population-level parameters
               "R2") # Model fit
@@ -197,7 +216,7 @@ variables <- c("ET", "T", "Gs", "PWP",
                "ecosystemR","belowgroundR",
                "NPP", "GPP", "Anet")
 
-for(i in 6:6){ #i in 1:length(variables)
+for(i in 1:length(variables)){ #i in 1:length(variables)
   df_var <- as.data.frame(out_list[i])
   run_mod(df_var, variables[i], overwrite = T)
 }

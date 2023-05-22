@@ -28,6 +28,8 @@ model{
     bb[p] ~ dnorm(mu.bb[sID[p]], tau.bb)
     # slope parameter:
     mm[p] ~ dnorm(mu.mm[sID[p]], tau.mm)
+    # pulse-level Dsum
+    Dsump[p] <- sum(Sqdiff[startID[p]:stopID[p]])
   }
   
   # Independent priors for study-level parameters (root nodes). Again, 
@@ -60,6 +62,6 @@ model{
   Sigs[2] <- sig.bb # standard deviation of intercept parameter in linear model among pulses
   Sigs[3] <- sig.mm # standard deviation of slope parameter in linear model among pulses
 
-  # Dsum
+  # Dsum (overall)
   Dsum <- sum(Sqdiff[])
 }
