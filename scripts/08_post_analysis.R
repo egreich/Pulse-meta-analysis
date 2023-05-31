@@ -5,6 +5,7 @@
 library(gbm)
 library(MASS)
 
+
 # Load output data
 load("data_output/df_all.Rdata") # out_list
 
@@ -18,7 +19,7 @@ load("data_output/df_all.Rdata") # out_list
 # Make data in the correct format
 df_all <- df_all %>%
   mutate(varGroup = as.factor(varGroup), Sample.unit = as.factor(Sample.unit), 
-         unitDuration = as.factor(unitDuration), Pulse.type = as.factor(Pulse.type))
+         unitDuration = as.factor(unitDuration), Pulse.type = as.factor(Pulse.type), response_cat = as.factor(response_cat))
 
 
 # Validation Set 
@@ -29,7 +30,7 @@ test <- df_all[-train.index,]
 
 # Build the Boosted Regression Model
 set.seed(24)
-q1 <- gbm(response_cat ~ varGroup+Sample.unit+unitDuration+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
+q1 <- gbm(response_cat ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, 
                     data=train, n.trees = 500, interaction.depth=4,
                     shrinkage = 0.1) # learning rate
 
@@ -39,14 +40,14 @@ save(q1_relinf, file = "data_output/q1_relinf.Rdata")
 # if we had interactions
 #interact.gbm(x=q1, data=train, i.var = "MAP.mm.wc")
 
-q1_grid_unitDuration <- plot(q1,i="unitDuration", return.grid = T)
 q1_grid_preVar <- plot(q1,i="preVar", return.grid = T)
 q1_grid_MAP <- plot(q1,i="MAP.mm.wc", return.grid = T)
+q1_grid_MAT <- plot(q1,i="MAT.C.wc", return.grid = T)
 
 
-write.csv(q1_grid_unitDuration, file = "data_output/q1_grid_unitDuration.csv")
 write.csv(q1_grid_preVar, file = "data_output/q1_grid_preVar.csv")
 write.csv(q1_grid_MAP, file = "data_output/q1_grid_MAP.csv")
+write.csv(q1_grid_MAT, file = "data_output/q1_grid_MAT.csv")
 
 
 #plotmo(q1)
@@ -55,11 +56,14 @@ write.csv(q1_grid_MAP, file = "data_output/q1_grid_MAP.csv")
 boost.pred1 <- predict(q1, newdata=test)
 mean((boost.pred1 - test$response_cat)^2)
 
-q1_glm <- glm(response_cat ~ varGroup+Sample.unit+unitDuration+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, data = df_all2)
-sink("data_output/q1_glm.txt")
-summary(q1_glm)
-sink()
+# q1_glm <- glm(response_cat ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, data = df_all, family = poisson)
+# sink("data_output/q1_glm.txt")
+# summary(q1_glm)
+# sink()
 
+ggplot(data= df_all) +
+  geom_jitter(aes(x = MAP.mm.wc, y = response_cat), alpha= 0.5) +
+  theme_bw()
 
 
 ## Question 2: If there is a pulse, do t.peak (time to peak response) 
@@ -76,7 +80,7 @@ train <- df_all2[train.index,]
 test <- df_all2[-train.index,]
 
 # Build the Boosted Regression Model
-q2.y <- gbm(mean_y.peak ~ varGroup+Sample.unit+unitDuration+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
+q2.y <- gbm(mean_y.peak ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
                     data=train, n.trees = 500, interaction.depth=4,
                     shrinkage = 0.1) # learning rate
 
@@ -101,7 +105,7 @@ summary(q2.y_glm)
 sink()
 
 
-q2.t <- gbm(mean_t.peak ~ varGroup+Sample.unit+unitDuration+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
+q2.t <- gbm(mean_t.peak ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
                     data=train, n.trees = 500, interaction.depth=4,
                     shrinkage = 0.1) # learning rate
 
@@ -140,7 +144,7 @@ train <- df_all3[train.index,]
 test <- df_all3[-train.index,]
 
 # Build the Boosted Regression Model
-q3 <- gbm(mean_mm ~ varGroup+Sample.unit+unitDuration+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
+q3 <- gbm(mean_mm ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, distribution = "gaussian", 
                     data=train, n.trees = 500, interaction.depth=4,
                     shrinkage = 0.1) # learning rate
 
@@ -160,7 +164,7 @@ write.csv(q3_grid_MAT, file = "data_output/q3_grid_MAT.csv")
 q3.pred <- predict(q3, newdata=test)
 mean((q3.pred - test$mean_mm)^2)
 
-q3_glm <- glm(mean_mm ~ varGroup+Sample.unit+unitDuration+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, data = df_all2)
+q3_glm <- glm(mean_mm ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar, data = df_all2)
 sink("data_output/q3_glm.txt")
 summary(q3_glm)
 sink()
