@@ -4,6 +4,8 @@
 
 # Table 1. Tables describing data (type of pulse and the number of pulses)
 
+# Table 2. Tables describing results
+
 # Figure 2. Histogram of t.peak and y.peaks for each variable
 
 # Figure 3-5. Relative influence plots for all 4 boosted regression trees
