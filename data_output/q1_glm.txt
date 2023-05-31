@@ -1,0 +1,35 @@
+
+Call:
+glm(formula = response_cat ~ varGroup + Sample.unit + unitDuration + 
+    MAT.C.wc + MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar, 
+    data = df_all2)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-2.1655  -0.3893  -0.1930   0.4274   2.6277  
+
+Coefficients:
+                         Estimate Std. Error t value Pr(>|t|)    
+(Intercept)             2.3214547  0.2561056   9.064  < 2e-16 ***
+varGroupwater           0.2501683  0.0759039   3.296 0.001061 ** 
+Sample.unitindividual  -0.5151375  0.2359676  -2.183 0.029562 *  
+Sample.unitleaf        -0.3499107  0.2323837  -1.506 0.132857    
+Sample.unitplot/collar -0.3898067  0.2209127  -1.765 0.078343 .  
+unitDurationintegrated  0.0247003  0.0862016   0.287 0.774600    
+MAT.C.wc               -0.0150880  0.0047987  -3.144 0.001779 ** 
+MAP.mm.wc              -0.0005031  0.0001329  -3.786 0.000175 ***
+Pulse.typeNatural       0.1470143  0.0840940   1.748 0.081131 .  
+Pulse.amount.mm         0.0001685  0.0009973   0.169 0.865921    
+preVar                  1.0261461  0.2527696   4.060 5.83e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for gaussian family taken to be 0.2823072)
+
+    Null deviance: 145.56  on 446  degrees of freedom
+Residual deviance: 123.09  on 436  degrees of freedom
+  (8 observations deleted due to missingness)
+AIC: 716.05
+
+Number of Fisher Scoring iterations: 2
+

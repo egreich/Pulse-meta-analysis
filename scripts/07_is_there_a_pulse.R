@@ -5,6 +5,7 @@ library(tidyr)
 library(jagsUI)
 library(ggforce)
 library(ggh4x) # for facet_nested
+library(cowplot)
 # Load self-made functions
 source("./scripts/functions.R")
 
@@ -32,7 +33,7 @@ for( i in 1:length(variables)){
   
   # Create study_pulse combination, create integer sID, pull study and pulse-level variables we care about
   pulse_table[[i]] <- dfin %>%
-    expand(nesting(Study.ID, Pulse.ID, varType, MAT.C.wc, MAP.mm.wc, elev.m.wc, unitDuration, Vegetation.type, Sample.unit, Pulse.type)) %>%
+    expand(nesting(Study.ID, Pulse.ID, varType, MAT.C.wc, MAP.mm.wc, elev.m.wc, unitDuration, Vegetation.type, Sample.unit, Pulse.type, Pulse.amount.mm, preVar)) %>%
     mutate(sID = as.numeric(factor(Study.ID))) %>%
     arrange(Study.ID) %>%
     tibble::rownames_to_column() %>%
@@ -150,20 +151,6 @@ ggplot() +
         plot.title = element_text(hjust = 0.5))
 
 pulse_table2 %>%
-  filter(modeltype == "mixture_fixed_w") %>%
-  filter(param %nin% c("Dsum", "Dsump")) %>%
-  ggplot(aes(x=pID, y=mean)) +
-  geom_pointrange(aes(ymin=pc2.5, ymax=pc97.5), position = position_dodge(width = 1), fatten = .5, alpha=.5) +
-  facet_grid(param ~ varType, scales="free") +
-  #scale_color_continuous(type = "viridis") +
-  theme_bw() +
-  theme(legend.position = "right",
-        legend.text=element_text(size=12),
-        text = element_text(size=12),
-        axis.text.x = element_text(size = 11, angle = 90, vjust = 0.6, hjust = 1),
-        plot.title = element_text(hjust = 0.5))
-
-pulse_table2 %>%
   filter(modeltype %in% c("mixture")) %>%
   filter(param %in% c("w")) %>%
   ggplot() +
@@ -178,64 +165,12 @@ pulse_table2 %>%
         #legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
 
-################## Look at semi-deterministic mixture model
-################## Here we will also group to look at study/pulse-specific variables
-################## reorganizing for clustering "post-analysis"
-
-pulse_table_final <- pulse_table2 %>%
-  filter(modeltype %in% c("mixture_fixed_w")) %>%
-  mutate(varGroup = ifelse(varType %in% c("ET", "T", "Gs", "PWP"), "water", "carbon")) %>%
-  mutate(Sample.unit = ifelse(Study.ID==962, "individual", Sample.unit)) # Fill gaps: 962 is individual for Sample.unit
-
-# Create table for weights- "Is there a pulse?"
-df_all <- pulse_table_final %>%
-  filter(param == "w") %>%
-  mutate(indID = c(1:nrow(df_all))) # create an individual ID
-
-# Individual ID for sorting
-df_indID <- df_all %>%
-  select(sID, pID, Study.ID, indID)
-
-pulse_table_final <- left_join(pulse_table_final, df_indID)
-
-# Create a table for t.peak and y.peak for when there is a pulse
-p_list <- c()
-for(i in 1:length(df_indID$indID)){
-  print(i)
-  
-  p_temp <- pulse_table_final %>%
-    filter(param=="w") %>%
-    filter(indID == i)
-  
-  if(p_temp$mean > 0){
-    p_list[i] <- p_temp$indID
-  }else{
-    p_list[i] <- NA
-  }
-  
-}
-p_list <- p_list[!is.na(p_list)]
-
-df_pulse <- pulse_table_final %>%
-  filter(indID %in% p_list) %>%
-  filter(param %in% c("y.peak", "t.peak"))
-
-# Create a table for mm and bb for when there is no pulse
-df_no_pulse <- pulse_table_final %>%
-  filter(indID %nin% p_list) %>%
-  filter(param %in% c("mm", "bb"))
-
-# Save data to output folder
-save(df_all, file = "data_output/df_all.Rdata")
-save(df_pulse, file = "data_output/df_pulse.Rdata")
-save(df_no_pulse, file = "data_output/df_no_pulse.Rdata")
-
-
-df_pulse %>%
+p <- pulse_table2 %>%
+  filter(modeltype == "mixture_fixed_w") %>%
+  filter(param %nin% c("Dsum", "Dsump")) %>%
   ggplot(aes(x=pID, y=mean)) +
   geom_pointrange(aes(ymin=pc2.5, ymax=pc97.5), position = position_dodge(width = 1), fatten = .5, alpha=.5) +
   facet_grid(param ~ varType, scales="free") +
-  ylim(0,20) +
   #scale_color_continuous(type = "viridis") +
   theme_bw() +
   theme(legend.position = "right",
@@ -243,6 +178,81 @@ df_pulse %>%
         text = element_text(size=12),
         axis.text.x = element_text(size = 11, angle = 90, vjust = 0.6, hjust = 1),
         plot.title = element_text(hjust = 0.5))
+p
+ggsave2("output_means.png", plot = p, path = "./plots/", width = 8, height = 6)
 
+p <- pulse_table2 %>%
+  filter(modeltype == "mixture_fixed_w") %>%
+  filter(param %in% c("bb", "mm", "y.peak")) %>%
+  ggplot(aes(x=pID, y=mean)) +
+  geom_pointrange(aes(ymin=pc2.5, ymax=pc97.5), position = position_dodge(width = 1), fatten = .5, alpha=.5) +
+  facet_grid(param ~ varType, scales="free") +
+  #scale_color_continuous(type = "viridis") +
+  ylim(-15,15) +
+  theme_bw() +
+  theme(legend.position = "right",
+        legend.text=element_text(size=12),
+        text = element_text(size=12),
+        axis.text.x = element_text(size = 11, angle = 90, vjust = 0.6, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
+ggsave2("output_means_cropped.png", plot = p, path = "./plots/", width = 8, height = 6)
+
+################## Look at semi-deterministic mixture model
+################## Here we will also group to look at study/pulse-specific variables
+################## reorganizing for "post-analysis"
+
+pulse_table_final <- pulse_table2 %>%
+  filter(modeltype %in% c("mixture_fixed_w")) %>%
+  mutate(varGroup = ifelse(varType %in% c("ET", "T", "Gs", "PWP"), "water", "carbon")) %>%
+  mutate(Sample.unit = ifelse(Study.ID==962, "individual", Sample.unit)) # Fill gaps: 962 is individual for Sample.unit
+
+# Create table for - "Is there a pulse?"
+df_all <- pulse_table_final %>%
+  filter(param %in% c("w", "y.peak", "t.peak", "mm", "bb")) %>%
+  dplyr::select(c(sID, pID, Study.ID, Pulse.ID, varType, varGroup, MAT.C.wc, MAP.mm.wc, unitDuration, Sample.unit, Pulse.type, Pulse.amount.mm, preVar, param, mean, pc2.5, pc97.5, overlap0)) %>%
+  pivot_wider(names_from = param, values_from = c(mean, pc2.5, pc97.5, overlap0))
+
+# Make NAs if the parameters are just pulling from the prior
+df_all$mean_y.peak <- ifelse(df_all$mean_w==0, NA, df_all$mean_y.peak)
+df_all$mean_t.peak <- ifelse(df_all$mean_w==0, NA, df_all$mean_t.peak)
+df_all$mean_mm <- ifelse(df_all$mean_w==1, NA, df_all$mean_mm)
+df_all$mean_bb <- ifelse(df_all$mean_w==1, NA, df_all$mean_bb)
+df_all$pc2.5_y.peak <- ifelse(df_all$mean_w==0, NA, df_all$pc2.5_y.peak)
+df_all$pc2.5_t.peak <- ifelse(df_all$mean_w==0, NA, df_all$pc2.5_t.peak)
+df_all$pc2.5_mm <- ifelse(df_all$mean_w==1, NA, df_all$pc2.5_mm)
+df_all$pc2.5_bb <- ifelse(df_all$mean_w==1, NA, df_all$pc2.5_bb)
+df_all$pc97.5_y.peak <- ifelse(df_all$mean_w==0, NA, df_all$pc97.5_y.peak)
+df_all$pc97.5_t.peak <- ifelse(df_all$mean_w==0, NA, df_all$pc97.5_t.peak)
+df_all$pc97.5_mm <- ifelse(df_all$mean_w==1, NA, df_all$pc97.5_mm)
+df_all$pc97.5_bb <- ifelse(df_all$mean_w==1, NA, df_all$pc97.5_bb)
+
+# Pulse response category rulese
+# a) w CI above 0.5 - ricker - classic pulse response (code 1)
+# b) w CI overlapping 0.5 - intermediate pulse response (code 2)
+# c) w CI below 0.5 - linear with sig slope - linear pulse response (code 3)
+# d) w CI below 0.5 - linear with non sig slope - no pulse response (code 4)
+catlist <- c()
+for(i in 1:nrow(df_all)){
+  if(df_all$pc2.5_w[i] > 0.5 & df_all$pc97.5_w[i] > 0.5){ # a
+    catlist[i] <- 1
+  } else if(df_all$pc2.5_w[i] < 0.5 & df_all$pc97.5_w[i] > 0.5){ # b
+    catlist[i] <- 2
+  } else if(df_all$pc2.5_w[i] < 0.5 & df_all$pc97.5_w[i] < 0.5){ # c and d
+    if(df_all$overlap0_mm[i] == F){ # sig slope
+      catlist[i] <- 3
+    } else if(df_all$overlap0_mm[i] == T){ # non sig slope
+      catlist[i] <- 4
+    }
+    
+  }
+}
+# create column for response category
+df_all$response_cat <- catlist
+
+# Save data to output folder
+# To do: Turn 1s and 0 params into NAs for save file
+# Include CIs in df_all
+save(pulse_table_final, file = "data_output/pulse_table_final.Rdata")
+save(df_all, file = "data_output/df_all.Rdata")
 
 

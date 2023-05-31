@@ -5,8 +5,8 @@ library(dplyr)
 library(udunits2)
 library(ggplot2)
 library(purrr)
-# Create a "not in" function
-`%nin%` <- negate(`%in%`)
+# Load self-made functions
+source("./scripts/functions.R")
 
 # Read in data
 d<- read_csv("./data_clean/Clean_record_info.csv")
@@ -240,6 +240,8 @@ clean_vars <- function(dfin, varname){
     left_join(df_swc, by = c("Study.ID", "Pulse.ID", "Source.file.name"))
   
   #### Create a preVar as a new column ####
+  d <- d %>% # scale the mean and sd for preVar
+    mutate(Mean.scaled = scale(Mean,center=TRUE,scale=TRUE), SD.scaled = scale(SD,center=TRUE,scale=TRUE))
   df_y <- d %>%
     filter(varType == varname,
            Study.ID %in% df2$Study.ID) %>%
@@ -247,8 +249,8 @@ clean_vars <- function(dfin, varname){
                                               Time.relative.to.pulse.unit == "hr" ~ ud.convert(Time.relative.to.pulse, "hr", "day"))) %>%
     group_by(Study.ID, Source.file.name, Pulse.ID) %>%
     summarize(initialDay.var = min(Days.relative.to.pulse),
-              preVar = Mean[which.min(Days.relative.to.pulse)],
-              preVar.SD = SD[which.min(Days.relative.to.pulse)]) %>%
+              preVar = Mean.scaled[which.min(Days.relative.to.pulse)],
+              preVar.SD = SD.scaled[which.min(Days.relative.to.pulse)]) %>%
     ungroup()
   
   df3 <- df3 %>%
