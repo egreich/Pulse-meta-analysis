@@ -32,7 +32,7 @@ clean_vars <- function(dfin, varname){
   #hist(foo$Mean)
   
   dfin <- dfin %>%
-    drop_na(Mean) # there are rare cases when NA when recorded in the data
+    drop_na(Mean) # there are rare cases when NA was recorded in the data
   
   ##### Select var of interest #####
 
@@ -54,7 +54,7 @@ clean_vars <- function(dfin, varname){
       # label unitDuration, convert to Days since pulse
       mutate(unitDuration = case_when(grepl("^cm h-1$", Units) ~ "integrated",
                                       grepl("l day-1", Units) ~ "integrated",
-                                      grepl("mm day-1 ", Units) ~ "integrated",
+                                      grepl("mm day-1", Units) ~ "integrated",
                                       grepl("mmol m-2 d-1", Units) ~ "integrated",
                                       grepl("mmol m-2 sec-1", Units) ~ "instantaneous",
                                       grepl("proportion of max", Units) ~ "integrated",

@@ -1,0 +1,34 @@
+
+Call:
+glm(formula = response_cat ~ varGroup + Sample.unit + MAT.C.wc + 
+    MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar, family = poisson, 
+    data = df_all)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-2.0807  -0.5955  -0.4849   0.2900   2.1315  
+
+Coefficients:
+                         Estimate Std. Error z value Pr(>|z|)    
+(Intercept)             0.9125460  0.2159162   4.226 2.37e-05 ***
+varGroupwater           0.3488267  0.0789889   4.416 1.00e-05 ***
+Sample.unitindividual  -0.7450621  0.1991077  -3.742 0.000183 ***
+Sample.unitleaf        -0.3466590  0.1849910  -1.874 0.060941 .  
+Sample.unitplot/collar -0.3309070  0.1795969  -1.842 0.065402 .  
+MAT.C.wc                0.0033864  0.0061735   0.549 0.583319    
+MAP.mm.wc               0.0001058  0.0001524   0.694 0.487509    
+Pulse.typeNatural       0.0314335  0.1080329   0.291 0.771080    
+Pulse.amount.mm        -0.0010123  0.0014128  -0.716 0.473688    
+preVar                  0.4304898  0.1717201   2.507 0.012179 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for poisson family taken to be 1)
+
+    Null deviance: 366.00  on 574  degrees of freedom
+Residual deviance: 310.14  on 565  degrees of freedom
+  (12 observations deleted due to missingness)
+AIC: 1732.4
+
+Number of Fisher Scoring iterations: 5
+

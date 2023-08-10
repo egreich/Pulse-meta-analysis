@@ -1,4 +1,4 @@
-### Save coda output in convenient format for clustering analysis
+### Plot output, put model output in convenient format for post-analysis
 
 library(dplyr)
 library(tidyr)
@@ -33,7 +33,7 @@ for( i in 1:length(variables)){
   
   # Create study_pulse combination, create integer sID, pull study and pulse-level variables we care about
   pulse_table[[i]] <- dfin %>%
-    expand(nesting(Study.ID, Pulse.ID, varType, MAT.C.wc, MAP.mm.wc, elev.m.wc, unitDuration, Vegetation.type, Sample.unit, Pulse.type, Pulse.amount.mm, preVar)) %>%
+    expand(nesting(Study.ID, Pulse.ID, varType, MAT.C.wc, MAP.mm.wc, aridity, elev.m.wc, unitDuration, Vegetation.type, Sample.unit, Pulse.type, Pulse.amount.mm, preVar)) %>%
     mutate(sID = as.numeric(factor(Study.ID))) %>%
     arrange(Study.ID) %>%
     tibble::rownames_to_column() %>%
@@ -209,7 +209,7 @@ pulse_table_final <- pulse_table2 %>%
 # Create table for - "Is there a pulse?"
 df_all <- pulse_table_final %>%
   filter(param %in% c("w", "y.peak", "t.peak", "mm", "bb")) %>%
-  dplyr::select(c(sID, pID, Study.ID, Pulse.ID, varType, varGroup, MAT.C.wc, MAP.mm.wc, unitDuration, Sample.unit, Pulse.type, Pulse.amount.mm, preVar, param, mean, pc2.5, pc97.5, overlap0)) %>%
+  dplyr::select(c(sID, pID, Study.ID, Pulse.ID, varType, varGroup, MAT.C.wc, MAP.mm.wc, aridity, unitDuration, Sample.unit, Pulse.type, Pulse.amount.mm, preVar, param, mean, pc2.5, pc97.5, overlap0)) %>%
   pivot_wider(names_from = param, values_from = c(mean, pc2.5, pc97.5, overlap0))
 
 # Make NAs if the parameters are just pulling from the prior
@@ -226,7 +226,7 @@ df_all$pc97.5_t.peak <- ifelse(df_all$mean_w==0, NA, df_all$pc97.5_t.peak)
 df_all$pc97.5_mm <- ifelse(df_all$mean_w==1, NA, df_all$pc97.5_mm)
 df_all$pc97.5_bb <- ifelse(df_all$mean_w==1, NA, df_all$pc97.5_bb)
 
-# Pulse response category rulese
+# Pulse response category rules
 # a) w CI above 0.5 - ricker - classic pulse response (code 1)
 # b) w CI overlapping 0.5 - intermediate pulse response (code 2)
 # c) w CI below 0.5 - linear with sig slope - linear pulse response (code 3)
@@ -251,7 +251,6 @@ df_all$response_cat <- catlist
 
 # Save data to output folder
 # To do: Turn 1s and 0 params into NAs for save file
-# Include CIs in df_all
 save(pulse_table_final, file = "data_output/pulse_table_final.Rdata")
 save(df_all, file = "data_output/df_all.Rdata")
 

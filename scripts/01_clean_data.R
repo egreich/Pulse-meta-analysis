@@ -35,14 +35,20 @@ d_study <- dataIN_study %>%
                                   Vegetation.type)) %>%
   relocate(Paper.ID)
 
-##### Join WorldClim variables to study table #####
+##### Join WorldClim variables  and aridity to study table #####
 wc <- read.csv("data_clean/worldclim_vars.csv") %>%
-  select(-lat, -lon) %>%
+  dplyr::select(-lat, -lon) %>%
   rename(MAP.mm.wc = MAP,
          MAT.C.wc = MAT,
          elev.m.wc = elev)
 
 d_study <- left_join(d_study, wc,
+                     by = "Study.ID")
+
+aridity <- read.csv("data_clean/aridity.csv") %>%
+  dplyr::select(-lat, -lon)
+
+d_study <- left_join(d_study, aridity,
                      by = "Study.ID")
 
 # Good congruence between gridded and local data, except for
@@ -67,7 +73,7 @@ for(i in 1:nrow(d_pulse)){
 # d_pulse1 has no pulse-level covariates (study level)
 d_pulse1 <- d_pulse %>%
   filter(n.Study.vars == 0) %>%
-  select(-c(13:27)) %>% # remove site variable columns
+  dplyr::select(-c(13:27)) %>% # remove site variable columns
   left_join(d_study, by= c("Study.ID")) %>% # Combine pulse1 and study table
   rename(Notes.pulse = Notes.x, 
          Notes.site = Notes.y) %>%
