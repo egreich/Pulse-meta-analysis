@@ -1,0 +1,28 @@
+formula: 
+as.factor(response_cat) ~ varGroup + Sample.unit + MAT.C.wc + MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar + obs
+data:    df_all
+
+ link  threshold nobs logLik  AIC     niter max.grad cond.H 
+ logit flexible  575  -605.90 1237.80 6(2)  9.67e-08 2.9e+07
+
+Coefficients:
+                         Estimate Std. Error z value Pr(>|z|)    
+varGroupwater           1.2671250  0.2264800   5.595 2.21e-08 ***
+Sample.unitindividual  -1.3392124  0.3261432  -4.106 4.02e-05 ***
+Sample.unitplot/collar  0.1086737  0.2248814   0.483  0.62892    
+Sample.unitfootprint    1.4713844  0.5866240   2.508  0.01213 *  
+MAT.C.wc                0.0020574  0.0161378   0.127  0.89855    
+MAP.mm.wc              -0.0005694  0.0004500  -1.265  0.20579    
+Pulse.typeNatural       0.1774626  0.2757713   0.644  0.51989    
+Pulse.amount.mm        -0.0037698  0.0039097  -0.964  0.33494    
+preVar                  2.6927842  0.8817130   3.054  0.00226 ** 
+obs                     0.0068887  0.0134860   0.511  0.60949    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+    Estimate Std. Error z value
+1|2  -0.4632     0.3611  -1.283
+2|3   0.7920     0.3644   2.174
+3|4   1.0439     0.3660   2.852
+(12 observations deleted due to missingness)

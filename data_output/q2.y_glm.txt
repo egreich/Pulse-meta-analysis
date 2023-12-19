@@ -1,35 +1,35 @@
 
 Call:
-glm(formula = mean_y.peak ~ varGroup + Sample.unit + unitDuration + 
-    MAT.C.wc + MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar, 
+glm(formula = mean_y.peak ~ varGroup + Sample.unit + MAT.C.wc + 
+    MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar + obs, 
     data = df_all2)
 
 Deviance Residuals: 
     Min       1Q   Median       3Q      Max  
--28.367   -0.957   -0.287    0.517   42.148  
+-28.391   -0.844   -0.226    0.554   42.208  
 
 Coefficients:
-                        Estimate Std. Error t value Pr(>|t|)   
-(Intercept)             4.858849   1.989546   2.442  0.01499 * 
-varGroupwater          -1.645669   0.589656  -2.791  0.00549 **
-Sample.unitindividual  -0.717984   1.833105  -0.392  0.69549   
-Sample.unitleaf        -0.069634   1.805263  -0.039  0.96925   
-Sample.unitplot/collar -2.688426   1.716151  -1.567  0.11795   
-unitDurationintegrated  0.511109   0.669654   0.763  0.44573   
-MAT.C.wc               -0.067671   0.037279  -1.815  0.07017 . 
-MAP.mm.wc              -0.002052   0.001032  -1.987  0.04754 * 
-Pulse.typeNatural       0.621511   0.653281   0.951  0.34194   
-Pulse.amount.mm         0.008230   0.007747   1.062  0.28868   
-preVar                  3.259602   1.963630   1.660  0.09764 . 
+                        Estimate Std. Error t value Pr(>|t|)    
+(Intercept)             4.689503   0.861053   5.446 8.61e-08 ***
+varGroupwater          -1.652831   0.591576  -2.794  0.00544 ** 
+Sample.unitindividual  -0.646905   0.730919  -0.885  0.37661    
+Sample.unitplot/collar -2.538410   0.547361  -4.638 4.67e-06 ***
+Sample.unitfootprint    0.455301   1.675805   0.272  0.78599    
+MAT.C.wc               -0.065674   0.037287  -1.761  0.07889 .  
+MAP.mm.wc              -0.002020   0.001030  -1.960  0.05060 .  
+Pulse.typeNatural       0.619008   0.654474   0.946  0.34477    
+Pulse.amount.mm         0.007986   0.007754   1.030  0.30362    
+preVar                  3.512618   1.942769   1.808  0.07129 .  
+obs                     0.019463   0.031942   0.609  0.54264    
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
-(Dispersion parameter for gaussian family taken to be 17.03695)
+(Dispersion parameter for gaussian family taken to be 17.0452)
 
     Null deviance: 8052.8  on 446  degrees of freedom
-Residual deviance: 7428.1  on 436  degrees of freedom
+Residual deviance: 7431.7  on 436  degrees of freedom
   (8 observations deleted due to missingness)
-AIC: 2548.8
+AIC: 2549
 
 Number of Fisher Scoring iterations: 2
 
