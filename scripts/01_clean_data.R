@@ -146,6 +146,14 @@ d_record <- dataIN_record %>%
 d_all <- d_record %>%
   left_join(d_pulse, by = c("Study.ID", "Pulse.ID"))
 
+# Number observations per pulse?
+numobs <- d_all %>%
+  group_by(Study.ID,Pulse.ID,varType) %>%
+  summarise(obs = n())
+
+d_all <- d_all %>%
+  left_join(numobs, by = c("Study.ID", "Pulse.ID", "varType"))
+
 
 # Create folder for cleaned data if it does not already exist
 if(!file.exists("data_clean")) { dir.create("data_clean")} 
