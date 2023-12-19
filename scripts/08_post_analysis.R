@@ -20,7 +20,7 @@ df_all <- df_all %>%
 df_all$Sample.unit <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
 
 library(ordinal)
-q1_clm <- clm(as.factor(response_cat) ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs, data = df_all)
+q1_clm <- clm(as.factor(response_cat) ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs+preVar*MAP.mm.wc, data = df_all)
 sink("data_output/q1_clm.txt") # sink will save the summary output to a text file
 summary(q1_clm)
 sink() # end what we save to the text file
@@ -34,7 +34,7 @@ df_all1 <- df_all
 df_all1$response_cat <- ifelse(df_all1$response_cat< 4, 1, 2)
 
 
-q1.1_glm <- glm(as.factor(response_cat) ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs, data = df_all1, family = binomial)
+q1.1_glm <- glm(as.factor(response_cat) ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs+preVar*MAP.mm.wc, data = df_all1, family = binomial)
 sink("data_output/q1.1_glm.txt") # sink will save the summary output to a text file
 summary(q1.1_glm)
 sink() # end what we save to the text file
@@ -48,12 +48,12 @@ sink() # end what we save to the text file
 df_all2 <- df_all %>%
   filter(mean_w != 0)
 
-q2.t_glm <- glm(mean_t.peak ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs, data = df_all2)
+q2.t_glm <- glm(mean_t.peak ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs+preVar*MAP.mm.wc+MAP.mm.wc*Pulse.amount.mm, data = df_all2)
 sink("data_output/q2.t_glm.txt")
 summary(q2.t_glm)
 sink()
 
-q2.y_glm <- glm(mean_y.peak ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs, data = df_all2)
+q2.y_glm <- glm(mean_y.peak ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs+varGroup*Pulse.amount.mm, data = df_all2)
 sink("data_output/q2.y_glm.txt")
 summary(q2.y_glm)
 sink()
@@ -68,7 +68,7 @@ df_all3 <- df_all %>%
   filter(mean_w != 1) %>%
   mutate(mean_mm = abs(mean_mm)) # take absolute value, because we only care about steepness
 
-q3_glm <- glm(mean_mm ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs, data = df_all3)
+q3_glm <- glm(mean_mm ~ varGroup+Sample.unit+MAT.C.wc+MAP.mm.wc+Pulse.type+Pulse.amount.mm+preVar+obs+preVar*MAP.mm.wc, data = df_all3)
 sink("data_output/q3_glm.txt")
 summary(q3_glm)
 sink()
