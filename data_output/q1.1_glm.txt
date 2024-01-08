@@ -2,34 +2,37 @@
 Call:
 glm(formula = as.factor(response_cat) ~ varGroup + Sample.unit + 
     MAT.C.wc + MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar + 
-    obs, family = binomial, data = df_all1)
+    obs + preVar * MAP.mm.wc + MAP.mm.wc * Pulse.amount.mm, family = binomial, 
+    data = df_all1)
 
 Deviance Residuals: 
     Min       1Q   Median       3Q      Max  
--2.9649  -0.5562  -0.4451  -0.3260   2.8897  
+-3.0341  -0.5544  -0.4468  -0.3208   2.8619  
 
 Coefficients:
-                        Estimate Std. Error z value Pr(>|z|)    
-(Intercept)            -2.098761   0.500538  -4.193 2.75e-05 ***
-varGroupwater           1.266799   0.285019   4.445 8.81e-06 ***
-Sample.unitindividual  -1.578152   0.488429  -3.231 0.001233 ** 
-Sample.unitplot/collar -0.113949   0.294600  -0.387 0.698909    
-Sample.unitfootprint    1.623180   0.730476   2.222 0.026277 *  
-MAT.C.wc                0.024619   0.024753   0.995 0.319950    
-MAP.mm.wc               0.001989   0.000545   3.649 0.000263 ***
-Pulse.typeNatural      -0.226073   0.477360  -0.474 0.635792    
-Pulse.amount.mm        -0.001924   0.005025  -0.383 0.701855    
-preVar                  3.198232   0.976894   3.274 0.001061 ** 
-obs                    -0.024356   0.027425  -0.888 0.374484    
+                            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)               -3.539e+00  2.735e+00  -1.294  0.19557    
+varGroupwater              1.243e+00  2.866e-01   4.336 1.45e-05 ***
+Sample.unitindividual     -1.588e+00  4.913e-01  -3.231  0.00123 ** 
+Sample.unitplot/collar    -1.052e-01  2.963e-01  -0.355  0.72267    
+Sample.unitfootprint       1.519e+00  7.387e-01   2.056  0.03976 *  
+MAT.C.wc                   2.346e-02  2.538e-02   0.924  0.35537    
+MAP.mm.wc                  4.960e-03  5.567e-03   0.891  0.37291    
+Pulse.typeNatural         -1.081e-01  4.940e-01  -0.219  0.82682    
+Pulse.amount.mm            7.708e-03  1.192e-02   0.646  0.51800    
+preVar                    -1.636e+00  1.010e+01  -0.162  0.87132    
+obs                       -2.429e-02  2.730e-02  -0.890  0.37373    
+MAP.mm.wc:preVar           1.020e-02  2.125e-02   0.480  0.63140    
+MAP.mm.wc:Pulse.amount.mm -1.527e-05  1.851e-05  -0.825  0.40954    
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 572.68  on 574  degrees of freedom
-Residual deviance: 474.83  on 564  degrees of freedom
+Residual deviance: 473.92  on 562  degrees of freedom
   (12 observations deleted due to missingness)
-AIC: 496.83
+AIC: 499.92
 
 Number of Fisher Scoring iterations: 5
 
