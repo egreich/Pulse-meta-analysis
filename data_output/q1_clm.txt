@@ -1,28 +1,29 @@
 formula: 
-as.factor(response_cat) ~ varGroup + Sample.unit + MAT.C.wc + MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar + obs
+as.factor(response_cat) ~ varGroup + Sample.unit + MAT.C.wc + MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar + obs + preVar * MAP.mm.wc
 data:    df_all
 
  link  threshold nobs logLik  AIC     niter max.grad cond.H 
- logit flexible  575  -605.90 1237.80 6(2)  9.67e-08 2.9e+07
+ logit flexible  575  -600.48 1228.95 7(2)  9.24e-12 5.9e+09
 
 Coefficients:
                          Estimate Std. Error z value Pr(>|z|)    
-varGroupwater           1.2671250  0.2264800   5.595 2.21e-08 ***
-Sample.unitindividual  -1.3392124  0.3261432  -4.106 4.02e-05 ***
-Sample.unitplot/collar  0.1086737  0.2248814   0.483  0.62892    
-Sample.unitfootprint    1.4713844  0.5866240   2.508  0.01213 *  
-MAT.C.wc                0.0020574  0.0161378   0.127  0.89855    
-MAP.mm.wc              -0.0005694  0.0004500  -1.265  0.20579    
-Pulse.typeNatural       0.1774626  0.2757713   0.644  0.51989    
-Pulse.amount.mm        -0.0037698  0.0039097  -0.964  0.33494    
-preVar                  2.6927842  0.8817130   3.054  0.00226 ** 
-obs                     0.0068887  0.0134860   0.511  0.60949    
+varGroupwater            1.219397   0.226822   5.376 7.62e-08 ***
+Sample.unitindividual   -1.319288   0.328063  -4.021 5.78e-05 ***
+Sample.unitplot/collar   0.145110   0.226179   0.642  0.52115    
+Sample.unitfootprint     1.499731   0.586530   2.557  0.01056 *  
+MAT.C.wc                 0.012366   0.016468   0.751  0.45270    
+MAP.mm.wc                0.017078   0.006532   2.615  0.00893 ** 
+Pulse.typeNatural        0.146104   0.277786   0.526  0.59892    
+Pulse.amount.mm         -0.002658   0.004054  -0.656  0.51212    
+preVar                 -29.916721  12.240357  -2.444  0.01452 *  
+obs                      0.005040   0.013633   0.370  0.71161    
+MAP.mm.wc:preVar         0.068449   0.025232   2.713  0.00667 ** 
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 Threshold coefficients:
     Estimate Std. Error z value
-1|2  -0.4632     0.3611  -1.283
-2|3   0.7920     0.3644   2.174
-3|4   1.0439     0.3660   2.852
+1|2    8.129      3.225   2.521
+2|3    9.405      3.231   2.911
+3|4    9.660      3.232   2.989
 (12 observations deleted due to missingness)
