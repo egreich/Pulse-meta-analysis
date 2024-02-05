@@ -1,4 +1,4 @@
-### Stacked histogram
+### Stacked histogram of category + scale
 
 library(tidyverse)
 library(ggforce) # for facet grids
