@@ -44,7 +44,7 @@ fig2 <- ggplot(df_all2, aes(x = varType)) +
   scale_y_continuous("Number of pulses") +
   scale_x_discrete(labels = parse(text = labs), breaks = levels(df_all2$varType)) +
   scale_fill_brewer(palette = "PRGn",
-                    labels = c("classic", "immediate", "linear", "no pulse")) +
+                    labels = c("classic", "intermediate", "linear", "no pulse")) +
   facet_row("varGroup2", scales = "free_x", space = "free",
             labeller = label_parsed) +
   theme_bw(base_size = 14) +

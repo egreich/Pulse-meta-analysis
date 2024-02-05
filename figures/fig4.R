@@ -52,7 +52,7 @@ fig4 <- ggplot() +
              switch = "y") +
   scale_x_discrete(labels = parse(text = labs), breaks = levels(df_all2$varType)) +
   scale_color_brewer(palette = "PRGn",
-                    labels = c("classic", "immediate", "linear", "no pulse")) +
+                    labels = c("classic", "intermediate", "linear", "no pulse")) +
   theme_bw(base_size = 14) +
   theme(panel.grid = element_blank(),
         strip.background = element_blank(),
