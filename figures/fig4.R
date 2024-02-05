@@ -9,37 +9,59 @@ path_out = "./figures/" # set save path
 # Load output data
 load("data_output/df_all.Rdata") # df_all
 
-df_all <- df_all %>%
-  mutate(varGroup = as.factor(varGroup), Sample.unit = as.factor(Sample.unit), 
-         Pulse.type = as.factor(Pulse.type), response_cat = as.factor(response_cat))
-df_all$Sample.unit <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
-
-df_all2 <- df_all %>% 
-  pivot_longer(cols = c(mean_y.peak, mean_t.peak))
-
-fig4 <- ggplot(df_all2, aes(y=value, x=varType, fill = name)) +
-  ## add half-violin from {ggdist} package
-  ggdist::stat_halfeye(
-    ## custom bandwidth
-    adjust = .5, 
-    ## adjust height
-    width = .6, 
-    ## move geom to the right
-    justification = -.2, 
-    ## remove slab interval
-    .width = 0, 
-    point_colour = NA
-  ) + 
-  geom_boxplot(
-    width = .25,
-    ## remove outliers
-    outlier.color = NA ## `outlier.shape = NA` or `outlier.alpha = 0` works as well
-  ) +
-  ylim(c(-10,10)) +
-  facet_col("varGroup", scales = "free_x") +
-  theme_bw()
-fig4
+df_all2 <- df_all %>%
+  mutate(varGroup = as.factor(varGroup), 
+         Sample.unit = factor(Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint")), 
+         Pulse.type = as.factor(Pulse.type), 
+         response_cat = as.factor(response_cat),
+         varGroup2 = case_when(varGroup == "carbon" ~ "C-related",
+                               varGroup == "water" ~ "H[2]*O-related"),
+         varType = factor(varType, levels = c("NPP", "GPP", "Anet",
+                                              "ecosystemR", "belowgroundR",
+                                              "ET", "T", "Gs", "PWP"))) %>% 
+  pivot_longer(cols = c(mean_y.peak, mean_t.peak),
+               names_to = "param") |> 
+  mutate(param = case_when(param == "mean_t.peak" ~ "t[peak]~(days)", 
+                           param == "mean_y.peak" ~ "y[peak]"))
 
 
-ggsave2("fig4.png", plot = fig4, path = path_out, width = 10, height = 5)
+df_sum <- df_all2 |> 
+  group_by(varGroup2, varType, param) |> 
+  summarize(param_m = mean(value, na.rm = TRUE),
+            param_sd = sd(value, na.rm = TRUE))
+
+labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",
+          "ET", "T", "g[s]", "Psi[plant]")
+
+fig4 <- ggplot() +
+  geom_jitter(data = df_all2, 
+              aes(x = varType, y = value,
+                  color = response_cat),
+              width = 0.1, alpha = 0.25) +
+  geom_errorbar(data = df_sum,
+                aes(x = varType, 
+                    ymin = param_m - param_sd,
+                    ymax = param_m + param_sd),
+                width = 0.1) +
+  geom_point(data = df_sum,
+             aes(x = varType, 
+                 y = param_m)) +
+  facet_grid(cols = vars(varGroup2),
+             rows = vars(param), scales = "free", space = "free_x",
+             labeller = label_parsed,
+             switch = "y") +
+  scale_x_discrete(labels = parse(text = labs), breaks = levels(df_all2$varType)) +
+  scale_color_brewer(palette = "PRGn",
+                    labels = c("classic", "intermediate", "linear", "no pulse")) +
+  theme_bw(base_size = 14) +
+  theme(panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.placement = "outside",
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        # legend.position = c(0.1, 0.8),
+        legend.background = element_rect(fill = NA))
+
+
+ggsave2("fig4.png", plot = fig4, path = path_out, width = 8, height = 4)
 
