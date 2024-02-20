@@ -26,8 +26,8 @@ df_all2 <- df_all %>%
          #                      varType == "PWP" ~ "Psi[plant]",
          #                      .default = as.character(varType)))
 #df_all$varType <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
-tot_df <- df_all2 |> 
-  group_by(varType, varGroup2) |> 
+tot_df <- df_all2 %>%
+  group_by(varType, varGroup2) %>% 
   count()
 
 labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",

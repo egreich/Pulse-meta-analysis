@@ -238,7 +238,7 @@ for(i in 1:nrow(df_all)){
   } else if(df_all$pc2.5_w[i] < 0.5 & df_all$pc97.5_w[i] > 0.5){ # b
     catlist[i] <- 2
   } else if(df_all$pc2.5_w[i] < 0.5 & df_all$pc97.5_w[i] < 0.5){ # c and d
-    if(df_all$overlap0_mm[i] == F){ # sig slope
+    if(df_all$overlap0_mm[i] == F & df_all$mean_w==0){ # sig slope
       catlist[i] <- 3
     } else if(df_all$overlap0_mm[i] == T){ # non sig slope
       catlist[i] <- 4
@@ -246,8 +246,17 @@ for(i in 1:nrow(df_all)){
     
   }
 }
+
 # create column for response category
 df_all$response_cat <- catlist
+
+# Make Ricker-related parameters NAs if there is no pulse (cat 4)
+df_all$mean_y.peak <- ifelse(df_all$response_cat==4, NA, df_all$mean_y.peak)
+df_all$mean_t.peak <- ifelse(df_all$response_cat==4, NA, df_all$mean_t.peak)
+df_all$pc2.5_y.peak <- ifelse(df_all$response_cat==4, NA, df_all$pc2.5_y.peak)
+df_all$pc2.5_t.peak <- ifelse(df_all$response_cat==4, NA, df_all$pc2.5_t.peak)
+df_all$pc97.5_y.peak <- ifelse(df_all$response_cat==4, NA, df_all$pc97.5_y.peak)
+df_all$pc97.5_t.peak <- ifelse(df_all$response_cat==4, NA, df_all$pc97.5_t.peak)
 
 # Save data to output folder
 save(pulse_table_final, file = "data_output/pulse_table_final.Rdata")

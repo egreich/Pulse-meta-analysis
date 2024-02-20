@@ -189,3 +189,8 @@ rownames(df_q) <- c("varGroupwater", "Sample.unitindividual", "Sample.unitplot/c
 write.csv(df_q, file = "data_output/coeff_mat.csv")
 
 
+# Basic Interaction Plot 
+interaction.plot(x.factor = df_all2$MAP.mm.wc * df_all2$preVar, 
+                 trace.factor = df_all2$response_cat,  
+                 response = df_all2$mean_t.peak, fun = mean)
+

@@ -20,24 +20,29 @@ df_all2 <- df_all %>%
                                               "ecosystemR", "belowgroundR",
                                               "ET", "T", "Gs", "PWP"))) %>% 
   pivot_longer(cols = c(mean_y.peak, mean_t.peak),
-               names_to = "param") |> 
+               names_to = "param") %>%
   mutate(param = case_when(param == "mean_t.peak" ~ "t[peak]~(days)", 
-                           param == "mean_y.peak" ~ "y[peak]"))
+                           param == "mean_y.peak" ~ "y[peak]"),
+         response_cat_name = case_when(response_cat == 1 ~ "classic", 
+                                       response_cat == 2 ~ "intermediate",
+                                       response_cat == 3 ~ "linear",
+                                       response_cat == 4 ~ "no pulse"))
 
 
-df_sum <- df_all2 |> 
-  group_by(varGroup2, varType, param) |> 
+df_sum <- df_all2 %>%
+  group_by(varGroup2, varType, param) %>% 
   summarize(param_m = mean(value, na.rm = TRUE),
             param_sd = sd(value, na.rm = TRUE))
 
 labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",
           "ET", "T", "g[s]", "Psi[plant]")
 
-fig4 <- ggplot() +
+fig4 <- df_all2 %>%
+  ggplot() +
   geom_jitter(data = df_all2, 
               aes(x = varType, y = value,
-                  color = response_cat),
-              width = 0.1, alpha = 0.25) +
+                  color = response_cat_name),
+              width = 0.1, alpha = 0.4) +
   geom_errorbar(data = df_sum,
                 aes(x = varType, 
                     ymin = param_m - param_sd,
@@ -51,8 +56,7 @@ fig4 <- ggplot() +
              labeller = label_parsed,
              switch = "y") +
   scale_x_discrete(labels = parse(text = labs), breaks = levels(df_all2$varType)) +
-  scale_color_brewer(palette = "PRGn",
-                    labels = c("classic", "intermediate", "linear", "no pulse")) +
+  scale_color_brewer(palette = "Dark2") +
   theme_bw(base_size = 14) +
   theme(panel.grid = element_blank(),
         strip.background = element_blank(),
