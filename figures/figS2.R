@@ -27,15 +27,15 @@ df_all2 <- df_all %>%
 #                      varType == "PWP" ~ "Psi[plant]",
 #                      .default = as.character(varType)))
 #df_all$varType <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
-tot_df <- df_all2 |> 
-  group_by(varType, varGroup2) |> 
+tot_df <- df_all2 %>% 
+  group_by(varType, varGroup2) %>% 
   count()
 
 
 # labs1 <- lapply(c("C-related", "H[2]O-related"), function(i) bquote(.(i)))
 
 # By pulse type
-figS2a <- df_all2 |> 
+figS2a <- df_all2 %>% 
   ggplot() +
   geom_density(aes(x = Pulse.amount.mm,
                    fill = Pulse.type),
@@ -54,7 +54,7 @@ figS2a <- df_all2 |>
         legend.justification = 1)
 
 # By sample unit
-figS2b <- df_all2 |> 
+figS2b <- df_all2 %>% 
   ggplot() +
   geom_density(aes(x = Pulse.amount.mm,
                      fill = Sample.unit),
@@ -74,7 +74,7 @@ figS2b <- df_all2 |>
         legend.justification = 1)
 
 # By Response category
-figS2c <- df_all2 |> 
+figS2c <- df_all2 %>% 
   ggplot() +
   geom_density(aes(x = Pulse.amount.mm,
                    fill = response_cat),

@@ -26,8 +26,12 @@ df_all2 <- df_all %>%
          #                      varType == "PWP" ~ "Psi[plant]",
          #                      .default = as.character(varType)))
 #df_all$varType <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
-tot_df <- df_all2 |> 
-  group_by(varType, varGroup2) |> 
+tot_df <- df_all2 %>%
+  group_by(varType, varGroup2) %>% 
+  count()
+
+tot_df2 <- df_all2 %>%
+  group_by(varGroup2, response_cat) %>%
   count()
 
 labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",
@@ -56,6 +60,5 @@ fig2 <- ggplot(df_all2, aes(x = varType)) +
         legend.background = element_rect(fill = NA))
 
 ggsave2("fig2.png", plot = fig2, path = path_out, width = 8, height = 4)
-
 
 

@@ -136,7 +136,7 @@ RobinsonPlot <- ggplot() +
                   shape  = 21,
                   colour = "#666666", 
                   fill   = "black",
-                  size   = .7,
+                  size   = 1,
                   #stroke = 1,
                   alpha  = 0.3) +
   ggtitle("Site Locations") +              # Add title
@@ -173,14 +173,88 @@ p <- whittaker_base_plot() +
              fill   = "black",
              stroke = 1,
              alpha  = 0.3) +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
 p
+
+my_legend <- get_legend(p)
+
+p_noleg <- whittaker_base_plot() +
+  # add the temperature - precipitation data points
+  geom_point(data = df_sites, 
+             aes(x = MAT.C.wc, 
+                 y = MAP.cm.wc), 
+             size   = .2,
+             shape  = 21,
+             colour = "#666666", 
+             fill   = "black",
+             stroke = 1,
+             alpha  = 0.3) +
+  theme_bw() +
+  theme(legend.position = "none")
+p_noleg
 
 #ggsave2("whittaker.png", plot = p, path = path_out)
 
-fig1 <- gridExtra::grid.arrange(RobinsonPlot,p,nrow=2)
+library(patchwork)
+fig1 <- RobinsonPlot + patchwork::inset_element(p_noleg,.03,.03,.27,.45)
+fig1
+design <- "AAAAAA
+           AAAAAA
+           ##BBB#"
+fig_together <- fig1 + as_ggplot(my_legend) + plot_layout(design = design)
 
-ggsave2("fig1.png", plot = fig1, path = path_out, width = 5, height = 5)
+ggsave2("fig1.png", plot = fig_together, path = path_out, width = 9, height = 6)
 
+##### v2
+RobinsonPlot <- ggplot() +
+  geom_spatraster(data = aridity_spat)+                   # Plot SpatRaster layer               
+  geom_spatvector(data = WorldSHP, 
+                  fill = "transparent") +       # Add world political map
+  geom_spatvector(data = points2, # add points
+                  #fill   = "transparent",
+                  #colour = "black",
+                  shape  = 21,
+                  colour = "#666666", 
+                  fill   = "black",
+                  size   = 1,
+                  #stroke = 1,
+                  alpha  = 0.3) +
+  ggtitle("Site Locations") +              # Add title
+  scale_fill_gradientn(colors=mypal2,           # Use user-defined colormap
+                       name = NULL,  # Name of the colorbar
+                       na.value = "transparent",# Set color for NA values
+                       labels=(c("Hyper-arid", "Arid","Semi-arid", "Dry sub-humid", "Humid")), # Colorbar labels
+                       breaks=c(0.05, 0.2, 0.5, 0.65, 0.8),
+                       lim=c(0,0.8))+           # Z axis limit
+  theme_minimal()+                              # Select theme. Try 'theme_void'
+  theme(plot.title = element_text(hjust =0.5),  # Place title in the middle of the plot
+        text = element_text(size = 12),
+        legend.position = c(0.14,.3))+        # Adjust plot text size for visibility
+  coord_sf(crs = "ESRI:54030",                  # Reproject to World Robinson
+           xlim = c(-152,152)*100000,    
+           ylim = c(-55,90)*100000)
 
+print(RobinsonPlot)
+
+p <- whittaker_base_plot() +
+  # add the temperature - precipitation data points
+  geom_point(data = df_sites, 
+             aes(x = MAT.C.wc, 
+                 y = MAP.cm.wc), 
+             size   = .7,
+             shape  = 21,
+             colour = "#666666", 
+             fill   = "black",
+             stroke = 1,
+             alpha  = 0.3) +
+  theme_bw()
+design <- "AAAAAA
+           AAAAAA
+           #BB###"
+fig_together <- RobinsonPlot + p + plot_layout(design = design) + plot_annotation()
+ggsave2("fig1v2.png", plot = fig_together, path = path_out, width = 9, height = 7.5)
+
+#fig1 <- gridExtra::grid.arrange(RobinsonPlot,p,nrow=2)
 

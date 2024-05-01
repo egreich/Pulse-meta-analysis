@@ -3,6 +3,7 @@
 library(tidyverse)
 library(ggforce) # for facet grids
 library(cowplot) # for ggsave2
+library(ggh4x)
 
 path_out = "./figures/" # set save path
 
@@ -19,49 +20,58 @@ df_all2 <- df_all %>%
          varType = factor(varType, levels = c("NPP", "GPP", "Anet",
                                               "ecosystemR", "belowgroundR",
                                               "ET", "T", "Gs", "PWP"))) %>% 
-  pivot_longer(cols = c(mean_y.peak, mean_t.peak),
-               names_to = "param") |> 
+  pivot_longer(cols = c(mean_y.peak, mean_t.peak, mean_mm),
+               names_to = "param") %>%
   mutate(param = case_when(param == "mean_t.peak" ~ "t[peak]~(days)", 
-                           param == "mean_y.peak" ~ "y[peak]"))
+                           param == "mean_y.peak" ~ "y[peak]",
+                           param == "mean_mm" ~ "slope"),
+         response_cat_name = case_when(response_cat == 1 ~ "classic", 
+                                       response_cat == 2 ~ "intermediate",
+                                       response_cat == 3 ~ "linear",
+                                       response_cat == 4 ~ "no pulse"))
 
 
-df_sum <- df_all2 |> 
-  group_by(varGroup2, varType, param) |> 
+df_sum <- df_all2 %>%
+  group_by(varGroup2, varType, param) %>% 
   summarize(param_m = mean(value, na.rm = TRUE),
             param_sd = sd(value, na.rm = TRUE))
 
 labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",
           "ET", "T", "g[s]", "Psi[plant]")
 
-fig4 <- ggplot() +
+fig4 <- df_all2 %>%
+  ggplot() +
   geom_jitter(data = df_all2, 
               aes(x = varType, y = value,
-                  color = response_cat),
-              width = 0.1, alpha = 0.25) +
+                  color = response_cat_name),
+              width = 0.1, alpha = 0.4) +
   geom_errorbar(data = df_sum,
-                aes(x = varType, 
-                    ymin = param_m - param_sd,
+                aes(x = varType, ymin = param_m - param_sd,
                     ymax = param_m + param_sd),
                 width = 0.1) +
   geom_point(data = df_sum,
-             aes(x = varType, 
-                 y = param_m)) +
-  facet_grid(cols = vars(varGroup2),
-             rows = vars(param), scales = "free", space = "free_x",
-             labeller = label_parsed,
-             switch = "y") +
+             aes(x = varType,y = param_m)) +
+  # facet_wrap2(cols = vars(varType),
+  #            rows = vars(param), scales = "free", axes = "all",
+  #            labeller = label_parsed,
+  #            switch = "y") +
+  facet_grid2(vars(param),vars(varType), scales = "free",labeller = label_parsed, independent = "y", switch="y") +
   scale_x_discrete(labels = parse(text = labs), breaks = levels(df_all2$varType)) +
-  scale_color_brewer(palette = "PRGn",
-                    labels = c("classic", "intermediate", "linear", "no pulse")) +
+  scale_color_brewer(palette = "Dark2") +
   theme_bw(base_size = 14) +
   theme(panel.grid = element_blank(),
         strip.background = element_blank(),
         strip.placement = "outside",
+        strip.text.x = element_blank(),
         axis.title = element_blank(),
         legend.title = element_blank(),
-        # legend.position = c(0.1, 0.8),
+        legend.position = "top",
         legend.background = element_rect(fill = NA))
 
 
 ggsave2("fig4.png", plot = fig4, path = path_out, width = 8, height = 4)
 
+test <- df_all2 %>%
+  filter(varType=="PWP")
+
+test_org <- as.data.frame(out_list[["PWP"]])

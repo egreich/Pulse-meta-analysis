@@ -300,5 +300,3 @@ for(i in 1:length(variables)){
   run_mod(df_var, variables[i], overwrite = T, fixed_w = T)
 }
 
-
-
