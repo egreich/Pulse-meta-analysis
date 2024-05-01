@@ -9,7 +9,7 @@ df_p <- read.csv("data_output/p_mat.csv")
 
 rowp <- df_p$X
 df_p <- df_p %>%
-  select(-X)
+  dplyr::select(-X)
 rownames(df_p) <- rowp
 p <-as.matrix(df_p)
 # par(mar=c(4.1, 9, 4.1, 4.1)) # adapt margins
@@ -22,7 +22,7 @@ df_q <- read.csv("data_output/coeff_mat.csv")
 
 rowp <- df_q$X
 df_q <- df_q %>%
-  select(-X)
+  dplyr::select(-X)
 rownames(df_q) <- rowp
 q <-as.matrix(df_q)
 
@@ -57,8 +57,8 @@ df <- df %>%
   mutate(coefficient.label = case_when(coefficient == "Sample.unitindividual" ~ "Spatial Scale Covariates",
                                        coefficient == "Sample.unitplot/collar" ~ "Spatial Scale Covariates",
                                        coefficient == "Sample.unitfootprint" ~ "Spatial Scale Covariates",
-                                       coefficient == "preVar*MAP.mm.wc" ~ "Interactions",
-                                       coefficient == "MAP.mm.wc*Pulse.amount.mm" ~ "Interactions",
+                                       coefficient == "preVar*MAP.mm.wc" ~ "Question 3: Interactions",
+                                       coefficient == "MAP.mm.wc*Pulse.amount.mm" ~ "Question 3: Interactions",
                                        coefficient == "obs" ~ "Pulse-related Covariates",
                                        coefficient == "Pulse.typeNatural" ~ "Pulse-related Covariates",
                                        coefficient == "Pulse.amount.mm" ~ "Pulse-related Covariates",
@@ -70,7 +70,10 @@ df <- df %>%
                                     question == "Response.or.no.response" ~ "Question 1",
                                     question == "time.of.peak" ~ "Question 2",
                                     question == "magnitude.of.peak" ~ "Question 2",
-                                    question == "speed.of.linear.response" ~ "Question 3"))
+                                    question == "speed.of.linear.response" ~ "Question 2"))
+
+df$coefficient.label <- factor(df$coefficient.label, levels =  c("Question 3: Interactions","Pulse-related Covariates",
+                                                           "Site Covariates","Spatial Scale Covariates"))
          
 df$coefficient <- factor(df$coefficient, levels =  c("varGroupwater","Sample.unitindividual",
                                                       "Sample.unitplot/collar","Sample.unitfootprint",    
@@ -91,13 +94,16 @@ df$question <- factor(df$question, levels =  c("Response.type","Response.or.no.r
 df$coefficient.label <- ifelse(is.na(df$coefficient.label), "Other",df$coefficient.label)
 # Plot
 
+df <- df %>% # filter out questions we're dropping
+  filter(question != "Response type") # not identifiable anymore
+
 p <- df %>%
   ggplot(aes(question, interaction(coefficient,coefficient.label, sep = "!"), fill = label)) +
   #geom_tile(aes(width=0.7, height=0.7, color = value), size = 2) +
   geom_tile() +
-  geom_text(aes(label=round(value, digits=4))) +
-  scale_fill_manual(values = c("red", "darkgray", "blue")) +
-  facet_grid(coefficient.label~question.label, scales = "free") +
+  #geom_text(aes(label=round(value, digits=4))) +
+  scale_fill_manual(values = c("blue", "darkgray","red")) +
+  facet_grid(coefficient.label~question.label, scales = "free", space = "free") +
   xlab("Response Variables") +
   #scale_x_discrete(guide = guide_axis_nested(delim = "!"), name = NULL) +
   scale_y_discrete(guide = guide_axis_nested(delim = "!"), name = NULL) +

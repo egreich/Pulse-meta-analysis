@@ -57,7 +57,7 @@ df_output_longer <- bind_rows(df_model_longer) # convert list into a dataframe
 df_output_longer2 <- df_output_longer %>%
   filter(param %in% c("t.peak","y.peak","bb", "mm","w","S","Dsum","Dsump")) %>%
   rename(pID = ID) %>%
-  mutate(converged = ifelse(gel<1.4, "yes", "no"))
+  mutate(converged = ifelse(gel<1.2, "yes", "no"))
 
 # remove w's for selection model
 row_index <- c()

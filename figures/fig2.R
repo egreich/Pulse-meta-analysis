@@ -30,6 +30,10 @@ tot_df <- df_all2 %>%
   group_by(varType, varGroup2) %>% 
   count()
 
+tot_df2 <- df_all2 %>%
+  group_by(varGroup2, response_cat) %>%
+  count()
+
 labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",
           "ET", "T", "g[s]", "Psi[plant]")
 # labs1 <- lapply(c("C-related", "H[2]O-related"), function(i) bquote(.(i)))
@@ -56,6 +60,5 @@ fig2 <- ggplot(df_all2, aes(x = varType)) +
         legend.background = element_rect(fill = NA))
 
 ggsave2("fig2.png", plot = fig2, path = path_out, width = 8, height = 4)
-
 
 

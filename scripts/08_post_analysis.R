@@ -2,7 +2,7 @@
 # glm code
 
 library(tidyverse)
-
+library(cowplot)
 
 # Load output data
 load("data_output/df_all.Rdata") # df_all
@@ -13,9 +13,21 @@ load("data_output/df_all.Rdata") # df_all
 ## Predictor variables of interest: varGroup, Sample.unit, MAT.C.wc, MAP.mm.wc, Pulse.type, Pulse.amount.mm, preVAR
 
 # Make data in the correct format
+# scale(as.numeric(dataIN$VPD),center=TRUE,scale=TRUE)
+# df_all <- df_all %>%
+#   mutate(varGroup = as.factor(varGroup), Sample.unit = as.factor(Sample.unit),
+#          Pulse.type = as.factor(Pulse.type),
+#          response_cat = as.numeric(response_cat),
+#          MAT.C.wc = scale(as.numeric(MAT.C.wc),center=TRUE,scale=TRUE),
+#          MAP.mm.wc = scale(as.numeric(MAP.mm.wc),center=TRUE,scale=TRUE),
+#          Pulse.amount.mm = scale(as.numeric(Pulse.amount.mm),center=TRUE,scale=TRUE),
+#          preVar = scale(as.numeric(preVar),center=TRUE,scale=TRUE),
+#          obs = scale(as.numeric(obs),center=TRUE,scale=TRUE))
+
 df_all <- df_all %>%
-  mutate(varGroup = as.factor(varGroup), Sample.unit = as.factor(Sample.unit), 
-         Pulse.type = as.factor(Pulse.type), response_cat = as.numeric(response_cat))
+  mutate(varGroup = as.factor(varGroup), Sample.unit = as.factor(Sample.unit),
+         Pulse.type = as.factor(Pulse.type),
+         response_cat = as.numeric(response_cat))
 
 df_all$Sample.unit <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
 
@@ -114,7 +126,7 @@ colnames(df_q) <- c("pred", "Response type", "Response or no response", "time of
 
 rowp<- df_q$pred
 df_q <- df_q %>%
-  select(-pred)
+  dplyr::select(-pred)
 rownames(df_q) <- rowp
 rownames(df_q) <- c("varGroupwater", "Sample.unitindividual", "Sample.unitplot/collar", "Sample.unitfootprint",
                     "MAT.C.wc", "MAP.mm.wc","Pulse.typeNatural", "Pulse.amount.mm", "preVar", "obs",
@@ -131,7 +143,7 @@ df_q1 <- df_q1[-(1:3),]
 colnames(df_q1) <- c("pred","est","q1")
 df_q1$est <- ifelse(df_q1$q1>0.05, 0, df_q1$est)
 df_q1 <- df_q1 %>%
-  select(c(1,2)) %>%
+  dplyr::select(c(1,2)) %>%
   rename(q1 = est)
 
 df_q1.1 <- as.data.frame(summary(q1.1_glm)$coefficients[,c(1,4)])%>%
@@ -140,7 +152,7 @@ df_q1.1 <- df_q1.1[-1,]
 colnames(df_q1.1) <- c("pred","est","q1.1")
 df_q1.1$est <- ifelse(df_q1.1$q1.1>0.05, 0, df_q1.1$est)
 df_q1.1 <- df_q1.1 %>%
-  select(c(1,2)) %>%
+  dplyr::select(c(1,2)) %>%
   rename(q1.1 = est)
 
 df_q2.t <- as.data.frame(summary(q2.t_glm)$coefficients[,c(1,4)]) %>%
@@ -149,7 +161,7 @@ df_q2.t <- df_q2.t[-1,]
 colnames(df_q2.t) <- c("pred","est", "q2.t")
 df_q2.t$est <- ifelse(df_q2.t$q2.t>0.05, 0, df_q2.t$est)
 df_q2.t <- df_q2.t %>%
-  select(c(1,2)) %>%
+  dplyr::select(c(1,2)) %>%
   rename(q2.t = est)
 
 df_q2.y <- as.data.frame(summary(q2.y_glm )$coefficients[,c(1,4)]) %>%
@@ -158,7 +170,7 @@ df_q2.y <- df_q2.y[-1,]
 colnames(df_q2.y) <- c("pred","est", "q2.y")
 df_q2.y$est <- ifelse(df_q2.y$q2.y>0.05, 0, df_q2.y$est)
 df_q2.y <- df_q2.y %>%
-  select(c(1,2)) %>%
+  dplyr::select(c(1,2)) %>%
   rename(q2.y = est)
 
 df_q3 <- as.data.frame(summary(q3_glm )$coefficients[,c(1,4)]) %>%
@@ -167,7 +179,7 @@ df_q3 <- df_q3[-1,]
 colnames(df_q3) <- c("pred","est", "q3")
 df_q3$est <- ifelse(df_q3$q3>0.05, 0, df_q3$est)
 df_q3 <- df_q3 %>%
-  select(c(1,2)) %>%
+  dplyr::select(c(1,2)) %>%
   rename(q3 = est)
 
 
@@ -180,7 +192,7 @@ colnames(df_q) <- c("pred", "Response type", "Response or no response", "time of
 
 rowp<- df_q$pred
 df_q <- df_q %>%
-  select(-pred)
+  dplyr::select(-pred)
 rownames(df_q) <- rowp
 rownames(df_q) <- c("varGroupwater", "Sample.unitindividual", "Sample.unitplot/collar", "Sample.unitfootprint",
                     "MAT.C.wc", "MAP.mm.wc","Pulse.typeNatural", "Pulse.amount.mm", "preVar", "obs",
@@ -190,7 +202,52 @@ write.csv(df_q, file = "data_output/coeff_mat.csv")
 
 
 # Basic Interaction Plot 
-interaction.plot(x.factor = df_all2$MAP.mm.wc * df_all2$preVar, 
-                 trace.factor = df_all2$response_cat,  
-                 response = df_all2$mean_t.peak, fun = mean)
+library(interactions)
+
+range(df_all2$mean_t.peak, na.rm=T)
+range(df_all2$preVar, na.rm=T)
+range(df_all2$Pulse.amount.mm, na.rm=T)
+
+p1 <- interact_plot(q2.t_glm, pred = preVar, modx = MAP.mm.wc, interval = T, legend.main = c("MAP (mm)")) +
+  labs(x = "Initial Conditions", y = NULL) +
+  coord_cartesian(ylim = c(0, 14), xlim = c(-.3,1.3)) +
+  theme_bw() +
+  theme(text = element_text(size=14))
+p1
+
+p2 <- interact_plot(q2.t_glm, pred = Pulse.amount.mm, modx = MAP.mm.wc, interval = T, legend.main = c("MAP (mm)")) +
+  labs(x = "Pulse amount (mm)", y = NULL) +
+  coord_cartesian(ylim = c(0, 14), xlim = c(0,300)) +
+  theme_bw() +
+  theme(text = element_text(size=14))
+p2
+
+library(gridExtra)
+library(patchwork)
+library(grid)
+layout <- '
+AB
+'
+p <- wrap_plots(A = p1, B = p2, design = layout)
+p <- p + plot_layout(guides = "collect") & theme(legend.position = "right")
+p1.2 <- grid.arrange(patchworkGrob(p), left = textGrob("Time of Peak (days)", rot = 90, gp=gpar(fontsize=14)))
+path_out = "./figures/" # set save path
+ggsave2("fig6.png", plot = p1.2, path = path_out, width = 8, height = 3)
+
+p3 <- johnson_neyman(q2.t_glm, pred = preVar, modx = MAP.mm.wc, alpha = .05, title = NULL)
+p3 <- p3$plot + xlab("MAP (mm)") + ylab("Slope of Initial Conditions")
+p4 <- johnson_neyman(q2.t_glm, pred = Pulse.amount.mm, modx = MAP.mm.wc, alpha = .05, title = NULL)
+p4 <- p4$plot + xlab("MAP (mm)") + ylab("Slope of Pulse Amount")
+
+p34 <- grid.arrange(p3,p4, nrow=2)
+ggsave2("figS3.png", plot = p34, path = path_out, width = 8, height = 8)
+
+# layout <- '
+# AB
+# '
+# p <- wrap_plots(A = p3, B = p4, design = layout)
+# p <- p + plot_layout(guides = "collect")
+# p1.2 <- grid.arrange(patchworkGrob(p), left = textGrob("Time of Peak", rot = 90, gp=gpar(fontsize=14)))
+# path_out = "./figures/" # set save path
+# ggsave2("figS3.png", plot = p1.2, path = path_out, width = 8, height = 3)
 
