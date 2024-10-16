@@ -1,16 +1,15 @@
 ### Script to run linear model
 
-if(!"postjags" %in% installed.packages()) {
-  devtools::install_github("fellmk/PostJAGS/postjags")
-}
+# if(!"postjags" %in% installed.packages()) {
+#   devtools::install_github("fellmk/PostJAGS/postjags")
+# }
 library(dplyr)
 library(tidyr)
 library(rjags)
 load.module('dic')
 library(ggplot2)
 library(mcmcplots)
-library(postjags)
-library(udunits2)
+#library(postjags)
 library(jagsUI)
 # Load self-made functions
 source("./scripts/functions.R")
@@ -38,7 +37,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # remove pulses outside of range, restrict to 14 days after pulse, remove pre-pulse days
   dfin <- dfin %>%
-    filter(Days.relative.to.pulse > -1) %>%
+    filter(Days.relative.to.pulse >= 0) %>%
     filter(Days.relative.to.pulse <= 14)
   
   # Create study_pulse combination, create integer sID
@@ -74,16 +73,24 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   start_stops <- data.frame(startID = starts, stopID = stops)
   
+  # calculate pooled variance
+  df$sd2 <- ifelse(df$SD.type=="SD", df$SD^2, df$N*(df$SD^2))
+  df$sd2 <- ifelse(df$SD.type=="SD" | df$SD.type=="SE", df$sd2, NA)
+  sigma2 = (df$sd2/2*df$N)*(1/(df$Mean^2))
+  tau = 1/sigma2 # convert pooled variance to precision
+  tau = ifelse(is.infinite(tau),NA,tau)
+  
   # Prepare data list
   datlist <- list(Y = df$LRR,
-                  t = df$Days.relative.to.pulse + 1,
+                  t = df$Days.relative.to.pulse,
                   pID = df$pID,
                   sID = pulse_table$sID,
                   startID = start_stops$startID,
                   stopID = start_stops$stopID,
                   Nobs = nrow(df),
                   Npulse = nrow(pulse_table),
-                  Nstudy = length(unique(pulse_table$sID))
+                  Nstudy = length(unique(pulse_table$sID)),
+                  tau = tau
   )
   
   # Initial values: manual specification to get model started
@@ -104,14 +111,13 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   sig.bb.init <- sd(mu.bb.init)
   sig.mm.init <- sd(mu.mm.init)
-  tau.init <- 1/(sd(df$LRR, na.rm = T)**2)
+  #tau.init <- 1/(sd(df$LRR, na.rm = T)**2)
   
   # inits to use when removing "overall" hierarchical level for functions
   inits <- list(mu.bb = mu.bb.init,
          mu.mm = mu.mm.init,
          sig.bb = sig.bb.init,
-         sig.mm = sig.mm.init,
-         tau = tau.init)
+         sig.mm = sig.mm.init)
   
   initslist <- list(inits, lapply(inits,"*", 2), lapply(inits,"/", 2))
   
@@ -123,10 +129,16 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
     initslist <- initslist
   }
   
+  #temp
+  # saved_state[["initials"]][[1]][["tau"]] <- NULL
+  # saved_state[["initials"]][[2]][["tau"]] <- NULL
+  # saved_state[["initials"]][[3]][["tau"]] <- NULL
+  # initslist <- saved_state[[2]]
+  
   # Run and monitor parameters
   
   params <- c("bb", "mm", # intercept and slope for linear model
-              "Sigs", "tau",
+              "tau",
               "M.bb", "M.mm",
               "mu.bb", "mu.mm",
               "sig.bb", "sig.mm",
@@ -187,8 +199,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # inits to save
   init_names = c("mu.bb", "mu.mm",
-                 "sig.bb","sig.mm",
-                 "tau")
+                 "sig.bb","sig.mm")
   
   # use get_remove_index function to find which variables to remove
   remove_vars = get_remove_index(init_names, params, type="jagsUI")
@@ -231,11 +242,33 @@ variables <- c("ET", "T", "Gs", "PWP",
                "ecosystemR","belowgroundR",
                "NPP", "GPP", "Anet")
 
-for(i in 1:length(variables)){
+# Uncomment if running locally
+# for(i in 1:length(variables)){
+#   df_var <- as.data.frame(out_list[i])
+#   run_mod(df_var, variables[i], overwrite = T)
+# }
+
+
+# Uncomment if running parallel on an HPC
+# Set run params
+args<-commandArgs(TRUE)
+print(args)
+print("resname:")
+(resvar <- as.numeric(args[1]))
+print("seed:")
+(SEED <- as.numeric(args[2]))
+
+
+# Set defined R seed
+set.seed(SEED, kind = NULL, normal.kind = NULL)
+# Generate "random" seed for jags
+JAGS.seed<-ceiling(runif(1,1,10000000))
+
+
+for(i in resvar){
+  print(variables[i])
   df_var <- as.data.frame(out_list[i])
   run_mod(df_var, variables[i], overwrite = T)
 }
-
-
 
 

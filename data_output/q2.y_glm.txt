@@ -1,37 +1,33 @@
 
 Call:
-glm(formula = mean_y.peak ~ varGroup + Sample.unit + MAT.C.wc + 
-    MAP.mm.wc + Pulse.type + Pulse.amount.mm + preVar + obs + 
-    preVar * MAP.mm.wc + MAP.mm.wc * Pulse.amount.mm, data = df_all2)
+glm(formula = mean_y.peak ~ varGroup + Sample.unit + MAT.C + 
+    MAP.mm + Pulse.amount.mm + MAP.mm * MAT.C + MAP.mm * varGroup + 
+    Pulse.amount.mm * varGroup, data = df_all2)
 
 Deviance Residuals: 
     Min       1Q   Median       3Q      Max  
--2.6920  -0.1749  -0.0210   0.1286   4.0779  
+-1006.9   -199.2      7.0     61.6   3575.9  
 
 Coefficients:
-                            Estimate Std. Error t value Pr(>|t|)    
-(Intercept)                3.448e-02  6.067e-01   0.057    0.955    
-varGroupwater              3.054e-01  7.448e-02   4.101 4.99e-05 ***
-Sample.unitindividual     -8.233e-02  9.249e-02  -0.890    0.374    
-Sample.unitplot/collar     5.367e-02  7.007e-02   0.766    0.444    
-Sample.unitfootprint       7.196e-01  1.775e-01   4.054 6.05e-05 ***
-MAT.C.wc                   6.179e-03  5.160e-03   1.197    0.232    
-MAP.mm.wc                 -5.735e-04  1.252e-03  -0.458    0.647    
-Pulse.typeNatural         -3.551e-02  9.692e-02  -0.366    0.714    
-Pulse.amount.mm            3.449e-03  2.323e-03   1.485    0.138    
-preVar                     4.899e-01  2.251e+00   0.218    0.828    
-obs                        5.211e-03  4.051e-03   1.286    0.199    
-MAP.mm.wc:preVar          -1.724e-03  4.786e-03  -0.360    0.719    
-MAP.mm.wc:Pulse.amount.mm -2.122e-06  3.315e-06  -0.640    0.522    
+                                        Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                            1.716e+02  1.812e+02   0.947 0.344668    
+varGroupWater-related                  9.678e+02  2.344e+02   4.128 4.89e-05 ***
+Sample.unitindividual                 -3.926e+02  1.104e+02  -3.555 0.000446 ***
+Sample.unitplot/footprint             -2.565e+02  7.286e+01  -3.521 0.000506 ***
+MAT.C                                  6.693e+00  1.386e+01   0.483 0.629514    
+MAP.mm                                -2.108e-02  3.378e-01  -0.062 0.950283    
+Pulse.amount.mm                       -1.205e+00  2.152e+00  -0.560 0.575894    
+MAT.C:MAP.mm                          -1.613e-03  3.051e-02  -0.053 0.957888    
+varGroupWater-related:MAP.mm          -1.408e+00  4.744e-01  -2.967 0.003276 ** 
+varGroupWater-related:Pulse.amount.mm -4.515e-01  3.543e+00  -0.127 0.898712    
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
-(Dispersion parameter for gaussian family taken to be 0.2713742)
+(Dispersion parameter for gaussian family taken to be 209062)
 
-    Null deviance: 125.67  on 410  degrees of freedom
-Residual deviance: 108.01  on 398  degrees of freedom
-  (8 observations deleted due to missingness)
-AIC: 645.11
+    Null deviance: 71671011  on 278  degrees of freedom
+Residual deviance: 56237673  on 269  degrees of freedom
+AIC: 4221.4
 
 Number of Fisher Scoring iterations: 2
 

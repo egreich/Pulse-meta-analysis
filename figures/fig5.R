@@ -3,6 +3,7 @@ library(ggpubr)
 library(tidyverse)
 library(cowplot)
 library(ggh4x)
+library(ggforce)
 
 # p value heatmap
 df_p <- read.csv("data_output/p_mat.csv")
@@ -43,7 +44,7 @@ for(i in 1:nrow(p)){
 df <- as.data.frame(q)
 df <- df %>%
   rownames_to_column() %>%
-  pivot_longer(c(2:6)) %>%
+  pivot_longer(c(2:5)) %>%
   rename(question = name, coefficient = rowname)
 
 # Create labels
@@ -52,71 +53,116 @@ df <- df %>%
   mutate(label = ifelse(value==0, "nonsignificant", label)) %>%
   mutate(value = ifelse(value==0, NA, value))
 
+# Manually add in reference labels for reading ease
+df_temp <- data.frame(coefficient = c("Carbon-related","Carbon-related","Carbon-related","Carbon-related",
+                                      "Spatial scale: leaf","Spatial scale: leaf","Spatial scale: leaf","Spatial scale: leaf"),
+                      question = c("GLM.for.response.or.no.response","GLM.for.time.of.peak", "GLM.for.magnitude.of.peak", "GLM.for.speed.of.linear.response",
+                                   "GLM.for.response.or.no.response","GLM.for.time.of.peak", "GLM.for.magnitude.of.peak", "GLM.for.speed.of.linear.response"),
+                      value = c(NA,NA,NA,NA,
+                                NA,NA,NA,NA),
+                      label = c("nonsignificant", "positive", "negative","nonsignificant",
+                                "negative", "positive", "positive","nonsignificant"))
+
+df <- rbind(df,df_temp)
+
 # Reorder coefficients and questions, rename to things that make sense
+
+df$coefficient <- factor(df$coefficient, levels =  c("MAP x MAT","MAP x carbon- or water-related","Pulse amount x carbon- or water-related",
+                                                     "Carbon-related",
+                                                     "(1) Carbon-related (2) water-related",
+                                                     "Pulse amount",
+                                                     "MAT",
+                                                     "MAP",
+                                                     "Spatial scale: leaf",
+                                                     "Sample.unitindividual",
+                                                     "Sample.unitplot/footprint"),
+                         labels = c("MAP x MAT","MAP x carbon- or water-related","Pulse amount x carbon- or water-related",
+                                    "Carbon-related",
+                                    "Water-related",
+                                    "Pulse amount",
+                                    "MAT",
+                                    "MAP",
+                                    "Spatial scale: leaf",
+                                    "Spatial scale: individual",
+                                    "Spatial scale: plot/footprint"))
+
 df <- df %>%
-  mutate(coefficient.label = case_when(coefficient == "Sample.unitindividual" ~ "Spatial Scale Covariates",
-                                       coefficient == "Sample.unitplot/collar" ~ "Spatial Scale Covariates",
-                                       coefficient == "Sample.unitfootprint" ~ "Spatial Scale Covariates",
-                                       coefficient == "preVar*MAP.mm.wc" ~ "Question 3: Interactions",
-                                       coefficient == "MAP.mm.wc*Pulse.amount.mm" ~ "Question 3: Interactions",
-                                       coefficient == "obs" ~ "Pulse-related Covariates",
-                                       coefficient == "Pulse.typeNatural" ~ "Pulse-related Covariates",
-                                       coefficient == "Pulse.amount.mm" ~ "Pulse-related Covariates",
-                                       coefficient == "varGroupwater" ~ "Pulse-related Covariates",
-                                       coefficient == "MAP.mm.wc" ~ "Site Covariates",
-                                       coefficient == "MAT.C.wc" ~ "Site Covariates",
-                                       coefficient == "preVar" ~ "Site Covariates"),
-         question.label = case_when(question == "Response.type" ~ "Question 1",
-                                    question == "Response.or.no.response" ~ "Question 1",
-                                    question == "time.of.peak" ~ "Question 2",
-                                    question == "magnitude.of.peak" ~ "Question 2",
-                                    question == "speed.of.linear.response" ~ "Question 2"))
+  mutate(coefficient.label = case_when(coefficient == "Spatial scale: leaf" ~ "Spatial Scale Covariates",
+                                       coefficient == "Spatial scale: individual" ~ "Spatial Scale Covariates",
+                                       coefficient == "Spatial scale: plot/footprint" ~ "Spatial Scale Covariates",
+                                       coefficient == "MAP x MAT" ~ "Interactions",
+                                       coefficient == "MAP x carbon- or water-related" ~ "Interactions",
+                                       coefficient == "Pulse amount x carbon- or water-related" ~ "Interactions",
+                                       coefficient == "Pulse amount" ~ "Pulse-related Covariates",
+                                       coefficient == "Water-related" ~ "Pulse-related Covariates",
+                                       coefficient == "Carbon-related" ~ "Pulse-related Covariates",
+                                       coefficient == "MAP" ~ "Site Covariates",
+                                       coefficient == "MAT" ~ "Site Covariates"),
+         question.label = case_when(question == "GLM.for.response.or.no.response" ~ "Question 1",
+                                    question == "GLM.for.time.of.peak" ~ "Question 2",
+                                    question == "GLM.for.magnitude.of.peak" ~ "Question 2",
+                                    question == "GLM.for.speed.of.linear.response" ~ "Question 2"))
 
-df$coefficient.label <- factor(df$coefficient.label, levels =  c("Question 3: Interactions","Pulse-related Covariates",
+df$coefficient.label <- factor(df$coefficient.label, levels =  c("Interactions","Pulse-related Covariates",
                                                            "Site Covariates","Spatial Scale Covariates"))
-         
-df$coefficient <- factor(df$coefficient, levels =  c("varGroupwater","Sample.unitindividual",
-                                                      "Sample.unitplot/collar","Sample.unitfootprint",    
-                                                      "MAT.C.wc","MAP.mm.wc",               
-                                                      "Pulse.typeNatural","Pulse.amount.mm",         
-                                                      "preVar","obs",                     
-                                                      "preVar*MAP.mm.wc","MAP.mm.wc*Pulse.amount.mm"),
-                            labels = c("Variable Group","Individual",
-                                       "Plot/collar","Footprint",    
-                                       "MAT","MAP",               
-                                       "Pulse Type","Pulse Amount",         
-                                       "Initial Conditions","Number of Observations",                     
-                                       "MAP*Initial Conditions","MAP*Pulse Amount"))
 
-df$question <- factor(df$question, levels =  c("Response.type","Response.or.no.response","time.of.peak","magnitude.of.peak","speed.of.linear.response"),
-                         labels = c("Response type","Response or no response","Time of peak","Magnitude of peak","Speed of linear response"))
+df$question <- factor(df$question, levels =  c("GLM.for.response.or.no.response","GLM.for.time.of.peak","GLM.for.magnitude.of.peak","GLM.for.speed.of.linear.response"),
+                         labels = c("GLM for response or no response","GLM for time of peak","GLM for magnitude of peak","GLM for speed of linear response"))
 
-df$coefficient.label <- ifelse(is.na(df$coefficient.label), "Other",df$coefficient.label)
+#df$coefficient.label <- ifelse(is.na(df$coefficient.label), "Other", df$coefficient.label)
+
 # Plot
 
-df <- df %>% # filter out questions we're dropping
-  filter(question != "Response type") # not identifiable anymore
+# p <- df %>%
+#   ggplot(aes(question, interaction(coefficient,coefficient.label, sep = "!"), fill = label)) +
+#   geom_tile(aes(width=.5, height=.7), size=2) +
+#   #geom_tile() +
+#   #geom_text(aes(label=round(value, digits=4))) +
+#   scale_fill_manual(values = c("blue", "darkgray","red")) +
+#   facet_grid(coefficient.label~question.label, scales = "free", space = "free") +
+#   xlab("Response Variables") +
+#   #scale_x_discrete(guide = guide_axis_nested(delim = "!"), name = NULL) +
+#   scale_y_discrete(guide = guide_axis_nested(delim = "!"), name = NULL) +
+#   theme_bw() +
+#   theme(#panel.spacing = unit(0, "lines"),
+#     #plot.margin=margin(grid::unit(0, "cm")),
+#     #panel.border = element_blank(),
+#     panel.grid = element_blank(),
+#     #panel.spacing = element_blank(),
+#     legend.position = "top",
+#         strip.background = element_blank(),
+#         strip.placement = "outside",
+#         strip.text.y = element_blank(),
+#         text = element_text(size=14),
+#         legend.title = element_blank(),
+#         axis.text.x = element_text(size=14, angle = 90, vjust = 0.8, hjust = 1))
+# p
 
 p <- df %>%
   ggplot(aes(question, interaction(coefficient,coefficient.label, sep = "!"), fill = label)) +
-  #geom_tile(aes(width=0.7, height=0.7, color = value), size = 2) +
-  geom_tile() +
+  geom_tile(aes(width=.5, height=.7), size=1) +
+  #geom_tile() +
   #geom_text(aes(label=round(value, digits=4))) +
   scale_fill_manual(values = c("blue", "darkgray","red")) +
-  facet_grid(coefficient.label~question.label, scales = "free", space = "free") +
   xlab("Response Variables") +
   #scale_x_discrete(guide = guide_axis_nested(delim = "!"), name = NULL) +
   scale_y_discrete(guide = guide_axis_nested(delim = "!"), name = NULL) +
   theme_bw() +
-  theme(#panel.spacing = unit(0, "lines"), 
-        strip.background = element_blank(),
-        strip.placement = "outside",
-        strip.text.y = element_blank(),
-        text = element_text(size=14),
-        legend.title = element_blank(),
-        axis.text.x = element_text(size=14, angle = 90, vjust = 0.8, hjust = 1))
+  theme(#panel.spacing = unit(0, "lines"),
+    #plot.margin=margin(grid::unit(0, "cm")),
+    #panel.border = element_blank(),
+    panel.grid = element_blank(),
+    #panel.spacing = element_blank(),
+    legend.position = "top",
+    strip.background = element_blank(),
+    strip.placement = "outside",
+    strip.text.y = element_blank(),
+    text = element_text(size=14),
+    legend.title = element_blank(),
+    axis.text.x = element_text(size=14, angle = 90, vjust = 0.8, hjust = 1))
 p
 
-ggsave2("fig5.png", plot = p, path = "./figures/", width = 10, height = 6)
+
+ggsave2("fig5.png", plot = p, path = "./figures/", width = 8, height = 8.7)
 
 

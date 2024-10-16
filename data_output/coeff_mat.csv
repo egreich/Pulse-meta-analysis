@@ -1,13 +1,10 @@
-"","Response type","Response or no response","time of peak","magnitude of peak","speed of linear response"
-"varGroupwater",1.20332176125749,1.01552263039919,0,0.305427884666121,0
-"Sample.unitindividual",-0.802351006805116,-1.41908790961753,-0.945195341324948,0,0
-"Sample.unitplot/collar",0.757254565850247,0,-1.26265511090058,0,0.662558730929664
-"Sample.unitfootprint",0,0,0,0.719555728484473,3.36283070628276
-"MAT.C.wc",0,0,0,0,0
-"MAP.mm.wc",0,0,0,0,0.0214726606150165
-"Pulse.typeNatural",0.860789824868598,1.24757180108154,0,0,0
-"Pulse.amount.mm",0,0,0.026242995921385,0,0
-"preVar",0,0,21.1514507342803,0,-39.6149417401622
-"obs",0,0,-0.0516600362914615,0,0
-"preVar*MAP.mm.wc",0,0,-0.0424982698344384,0,0.0808084144796157
-"MAP.mm.wc*Pulse.amount.mm",NA,0,-5.56058333933489e-05,0,0
+"","GLM for response or no response","GLM for time of peak","GLM for magnitude of peak","GLM for speed of linear response"
+"(1) Carbon-related (2) water-related",0,-3.59317704179024,967.763811811836,0
+"Sample.unitindividual",1.09767215696124,-2.05414731756587,-392.575434653626,0
+"Sample.unitplot/footprint",0.68533324278755,-2.69352673102737,-256.502059927575,0
+"MAT",0,-0.160431570982305,0,9357.4728097025
+"MAP",0,0,0,0
+"Pulse amount",0,-0.0214503535759584,0,0
+"MAP x MAT",0,0.000227337397844624,0,0
+"MAP x carbon- or water-related",0,0.00523459044279434,-1.40771999569425,0
+"Pulse amount x carbon- or water-related",0,0.0409794955557689,0,0

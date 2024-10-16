@@ -6,9 +6,13 @@
 model{
   for(i in 1:Nobs){ # number of observations
     # Likelihood for the log-response ratio (e.g., LRR for ET)
-    Y[i] ~ dnorm(mu[i], tau)
+    Y[i] ~ dnorm(mu[i], tau[i])
     # Replicated data
-    Y.rep[i] ~ dnorm(mu[i], tau)
+    Y.rep[i] ~ dnorm(mu[i], tau[i])
+    
+    # Estimate precision when values are missing
+    tau[i] ~ dgamma(a.t, b.t)
+    sig[i] <- pow(tau[i], -0.5)
     
     # Mean model: Linear model
     mu[i] <- bb[pID[i]] + mm[pID[i]]*t[i]
@@ -16,10 +20,11 @@ model{
     # Squared differences
     Sqdiff[i] <- pow(Y[i] - Y.rep[i], 2) 
   }
+  
   # Compute Bayesian R2 value
-  var.pred <- pow(sd(mu[]),2)
-  var.resid <- 1/tau
-  R2 <- var.pred/(var.pred + var.resid)
+  # var.pred <- pow(sd(mu[]),2)
+  # var.resid <- 1/tau[]
+  # R2 <- var.pred/(var.pred + var.resid)
   
   # Hierarchical priors for pulse-level parameters, centered on study-level 
   # parameters.  
@@ -53,15 +58,10 @@ model{
   sig.mm ~ dunif(0,100)
   tau.mm <- pow(sig.mm,-2)
 
-  # Prior for observation precision
-  tau ~ dgamma(0.01, 0.01)
-  sig <- pow(tau, -0.5)
+  # Priors for observation precision
+  a.t ~ dunif(0,100)
+  b.t ~ dunif(0,100)
   
-  # Standard deviations and other quantities to monitor
-  Sigs[1] <- sig # SD among observations
-  Sigs[2] <- sig.bb # standard deviation of intercept parameter in linear model among pulses
-  Sigs[3] <- sig.mm # standard deviation of slope parameter in linear model among pulses
-
   # Dsum (overall)
   Dsum <- sum(Sqdiff[])
 }
