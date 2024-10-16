@@ -9,9 +9,13 @@ model{
   
   for(i in 1:Nobs){ # number of observations
     # Likelihood for the log-response ratio (e.g., LRR for ET)
-    Y[i] ~ dnorm(mu[i], tau)
+    Y[i] ~ dnorm(mu[i], tau[i])
     # Replicated data
-    Y.rep[i] ~ dnorm(mu[i], tau)
+    Y.rep[i] ~ dnorm(mu[i], tau[i])
+    
+    # Estimate precision when values are missing
+    tau[i] ~ dgamma(a.t, b.t)
+    sig[i] <- pow(tau[i], -0.5)
     
     # Mean model: Ricker model
     mu[i] <- y.peak[pID[i]]*TimePart[i]
@@ -25,9 +29,9 @@ model{
     Sqdiff[i] <- pow(Y[i] - Y.rep[i], 2) 
   }
   # Compute Bayesian R2 value
-  var.pred <- pow(sd(mu[]),2)
-  var.resid <- 1/tau
-  R2 <- var.pred/(var.pred + var.resid)
+  # var.pred <- pow(sd(mu[]),2)
+  # var.resid <- 1/tau
+  # R2 <- var.pred/(var.pred + var.resid)
   
   # Hierarchical priors for pulse-level parameters, centered on study-level 
   # parameters.
@@ -36,7 +40,7 @@ model{
     # so give hierarchical prior on log scale, centered on study-level parameters:
     # Truncate t.peak at upper value of maxT, which means we truncate Lt.peak at
     # log(maxT) = log.maxT.
-    Lt.peak[p] ~ dnorm(mu.Lt.peak[sID[p]], tau.Lt.peak)T(0,log.maxT)
+    Lt.peak[p] ~ dnorm(mu.Lt.peak[sID[p]], tau.Lt.peak)T(,log.maxT)
     t.peak[p] <- exp(Lt.peak[p])
     # y.peak can be positive (increase in response after pulse) or negative (e.g.,
     # decrease in response after pulse), so model on original scale:
@@ -50,7 +54,7 @@ model{
   for(s in 1:Nstudy){ # number of studies
     # Can potentially incorporate MAP and MAT here to get at 
     # biome type/ treat studies differently
-    mu.Lt.peak[s] ~ dnorm(0, 0.0001)T(0,log.maxT) 
+    mu.Lt.peak[s] ~ dnorm(0, 0.0001)T(,log.maxT) 
     # back-transform to get study-level t.peak:
     mu.t.peak[s] <- exp(mu.Lt.peak[s])
     mu.y.peak[s] ~ dnorm(0, 0.0001)
@@ -72,14 +76,9 @@ model{
   tau.Lt.peak <- pow(sig.Lt.peak,-2)
   tau.y.peak <- pow(sig.y.peak,-2)
 
-  # Prior for observation precision
-  tau ~ dgamma(0.01, 0.01)
-  sig <- pow(tau, -0.5)
-  
-  # Standard deviations and other quantities to monitor
-  Sigs[1] <- sig # SD among observations
-  Sigs[2] <- sig.Lt.peak # SD of peak t parameter (log scale) among pulses
-  Sigs[3] <- sig.y.peak # SD of peak y parameter among pulses
+  # Priors for observation precision
+  a.t ~ dunif(0,100)
+  b.t ~ dunif(0,100)
 
   # Dsum
   Dsum <- sum(Sqdiff[])

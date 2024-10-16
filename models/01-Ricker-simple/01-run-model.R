@@ -1,16 +1,15 @@
 ### Script to run Ricker model
 
-if(!"postjags" %in% installed.packages()) {
-  devtools::install_github("fellmk/PostJAGS/postjags")
-}
+# if(!"postjags" %in% installed.packages()) {
+#   devtools::install_github("fellmk/PostJAGS/postjags")
+# }
 library(dplyr)
 library(tidyr)
 library(rjags)
 load.module('dic')
 library(ggplot2)
 library(mcmcplots)
-library(postjags)
-library(udunits2)
+#library(postjags)
 library(jagsUI)
 # Load self-made functions
 source("./scripts/functions.R")
@@ -25,7 +24,7 @@ load("models/model_input.Rdata") # out_list
 run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # Uncomment the next line to test the function line-by-line
-  #varname <- "belowgroundR" #ET, GPP, Gs
+  #varname <- "ET" #ET, GPP, Gs
   
   dfin <- out_list[[varname]]
   
@@ -37,7 +36,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # remove pulses outside of range, restrict to 14 days after pulse, remove pre-pulse days
   dfin <- dfin %>%
-    filter(Days.relative.to.pulse > -1) %>%
+    filter(Days.relative.to.pulse >= 0) %>%
     filter(Days.relative.to.pulse <= 14)
   
   # Create study_pulse combination, create integer sID
@@ -73,10 +72,16 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   start_stops <- data.frame(startID = starts, stopID = stops)
   
+  # calculate pooled variance
+  df$sd2 <- ifelse(df$SD.type=="SD", df$SD^2, df$N*(df$SD^2))
+  df$sd2 <- ifelse(df$SD.type=="SD" | df$SD.type=="SE", df$sd2, NA)
+  sigma2 = (df$sd2/2*df$N)*(1/(df$Mean^2))
+  tau = 1/sigma2 # convert pooled variance to precision
+  tau = ifelse(is.infinite(tau),NA,tau)
   
   # Prepare data list
   datlist <- list(Y = df$LRR,
-                  t = df$Days.relative.to.pulse + 1,
+                  t = df$Days.relative.to.pulse,
                   pID = df$pID,
                   sID = pulse_table$sID,
                   startID = start_stops$startID,
@@ -84,7 +89,8 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
                   Nobs = nrow(df),
                   Npulse = nrow(pulse_table),
                   Nstudy = length(unique(pulse_table$sID)),
-                  log.maxT = log(max(df$Days.relative.to.pulse + 1))
+                  log.maxT = log(max(df$Days.relative.to.pulse)),
+                  tau = tau
   )
   
   # Initial values: manual specification to get model started
@@ -94,23 +100,22 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
     list(mu.Lt.peak = rep(log(mean(df$Days.relative.to.pulse)), datlist$Nstudy),
          mu.y.peak = rnorm(datlist$Nstudy,log(mean(df$Mean)),2),
          sig.Lt.peak = .5,
-         sig.y.peak = 3,
-         tau = 2)
+         sig.y.peak = 3)
   }
   
   initslist <- list(inits(), inits(), inits())
   
-  # Initial values: from saved state
-  if(file.exists(initfilename)){
-    load(initfilename)
-    initslist <- saved_state[[2]]
-  }else if(!file.exists(initfilename)){
-    initslist <- initslist
-  }
+    # Initial values: from saved state
+    if(file.exists(initfilename)){ # comment out temp
+      load(initfilename)
+      initslist <- saved_state[[2]]
+    }else if(!file.exists(initfilename)){
+      initslist <- initslist
+    }
   
   # Run and monitor parameters
   
-  params <- c("Sigs", "sig.Lt.peak", "sig.y.peak", "tau",
+  params <- c("sig.Lt.peak", "sig.y.peak", "tau",
               "M.Lt.peak","M.y.peak",
               "deviance", "Dsum", "Dsump", # model performance metrics
               "t.peak","y.peak", "Lt.peak", # pulse-level parameters
@@ -171,8 +176,7 @@ run_mod <- function(dfin, varname, overwrite = F, lowdev = F){
   
   # inits to save
   init_names = c("mu.Lt.peak","mu.y.peak",
-                 "sig.Lt.peak","sig.y.peak",
-                 "tau")
+                 "sig.Lt.peak","sig.y.peak")
   
   # use get_remove_index function to find which variables to remove
   remove_vars = get_remove_index(init_names, params, type="jagsUI")
@@ -216,7 +220,31 @@ variables <- c("ET", "T", "Gs", "PWP",
                "ecosystemR","belowgroundR",
                "NPP", "GPP", "Anet")
 
-for(i in 1:length(variables)){ #i in 1:length(variables)
+# Uncomment if running locally
+# for(i in 1:length(variables)){
+#   print(variables[i])
+#   df_var <- as.data.frame(out_list[i])
+#   run_mod(df_var, variables[i], overwrite = T)
+# }
+
+# Uncomment if running parallel on an HPC
+# Set run params
+args<-commandArgs(TRUE)
+print(args)
+print("resname:")
+(resvar <- as.numeric(args[1]))
+print("seed:")
+(SEED <- as.numeric(args[2]))
+
+
+# Set defined R seed
+set.seed(SEED, kind = NULL, normal.kind = NULL)
+# Generate "random" seed for jags
+JAGS.seed<-ceiling(runif(1,1,10000000))
+
+
+for(i in resvar){
+  print(variables[i])
   df_var <- as.data.frame(out_list[i])
   run_mod(df_var, variables[i], overwrite = T)
 }

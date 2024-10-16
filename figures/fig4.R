@@ -1,9 +1,8 @@
-# Figure 4. Histogram? of t.peak and y.peaks for each variable
+### Stacked histogram
 
 library(tidyverse)
 library(ggforce) # for facet grids
 library(cowplot) # for ggsave2
-library(ggh4x)
 
 path_out = "./figures/" # set save path
 
@@ -15,63 +14,51 @@ df_all2 <- df_all %>%
          Sample.unit = factor(Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint")), 
          Pulse.type = as.factor(Pulse.type), 
          response_cat = as.factor(response_cat),
-         varGroup2 = case_when(varGroup == "carbon" ~ "C-related",
-                               varGroup == "water" ~ "H[2]*O-related"),
+         varGroup2 = case_when(varGroup == "carbon" ~ "Carbon-related",
+                               varGroup == "water" ~ "Water-related"),
          varType = factor(varType, levels = c("NPP", "GPP", "Anet",
-                                              "ecosystemR", "belowgroundR",
-                                              "ET", "T", "Gs", "PWP"))) %>% 
-  pivot_longer(cols = c(mean_y.peak, mean_t.peak, mean_mm),
-               names_to = "param") %>%
-  mutate(param = case_when(param == "mean_t.peak" ~ "t[peak]~(days)", 
-                           param == "mean_y.peak" ~ "y[peak]",
-                           param == "mean_mm" ~ "slope"),
-         response_cat_name = case_when(response_cat == 1 ~ "classic", 
-                                       response_cat == 2 ~ "intermediate",
-                                       response_cat == 3 ~ "linear",
-                                       response_cat == 4 ~ "no pulse"))
+                                               "ecosystemR", "belowgroundR",
+                                               "ET", "T", "Gs", "PWP")))
+         # varType2 = case_when(varType == "Anet" ~ "A[net]",
+         #                      varType == "belowgroundR" ~ "R[below]",
+         #                      varType == "ecosystemR" ~ "R[eco]",
+         #                      varType == "Gs" ~ "g[s]",
+         #                      varType == "PWP" ~ "Psi[plant]",
+         #                      .default = as.character(varType)))
+#df_all$varType <- factor(df_all$Sample.unit, levels = c("leaf", "individual", "plot/collar", "footprint"))
+tot_df <- df_all2 %>%
+  group_by(varType, varGroup2) %>% 
+  count()
 
-
-df_sum <- df_all2 %>%
-  group_by(varGroup2, varType, param) %>% 
-  summarize(param_m = mean(value, na.rm = TRUE),
-            param_sd = sd(value, na.rm = TRUE))
+tot_df2 <- df_all2 %>%
+  group_by(varGroup2, response_cat) %>%
+  count()
 
 labs <- c("NPP", "GPP", "A[net]", "R[eco]", "R[below]",
           "ET", "T", "g[s]", "Psi[plant]")
+# labs1 <- lapply(c("C-related", "H[2]O-related"), function(i) bquote(.(i)))
 
-fig4 <- df_all2 %>%
-  ggplot() +
-  geom_jitter(data = df_all2, 
-              aes(x = varType, y = value,
-                  color = response_cat_name),
-              width = 0.1, alpha = 0.4) +
-  geom_errorbar(data = df_sum,
-                aes(x = varType, ymin = param_m - param_sd,
-                    ymax = param_m + param_sd),
-                width = 0.1) +
-  geom_point(data = df_sum,
-             aes(x = varType,y = param_m)) +
-  # facet_wrap2(cols = vars(varType),
-  #            rows = vars(param), scales = "free", axes = "all",
-  #            labeller = label_parsed,
-  #            switch = "y") +
-  facet_grid2(vars(param),vars(varType), scales = "free",labeller = label_parsed, independent = "y", switch="y") +
+fig4 <- ggplot(df_all2, aes(x = varType)) +
+  geom_bar(position = "stack", 
+           aes(fill = response_cat)) +
+  geom_text(data = tot_df,
+            aes(x = varType,  y = n, label = n),
+            vjust = -0.2,
+            size = 4) +
+  scale_y_continuous("Number of pulse events") +
   scale_x_discrete(labels = parse(text = labs), breaks = levels(df_all2$varType)) +
-  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "PRGn",
+                    labels = c("classic", "intermediate", "linear", "no pulse")) +
+  facet_row("varGroup2", scales = "free_x", space = "free",
+            labeller = label_parsed) +
   theme_bw(base_size = 14) +
   theme(panel.grid = element_blank(),
         strip.background = element_blank(),
-        strip.placement = "outside",
-        strip.text.x = element_blank(),
-        axis.title = element_blank(),
+        axis.title.x = element_blank(),
         legend.title = element_blank(),
-        legend.position = "top",
+        legend.position = c(0.1, 0.8),
         legend.background = element_rect(fill = NA))
-
 
 ggsave2("fig4.png", plot = fig4, path = path_out, width = 8, height = 4)
 
-test <- df_all2 %>%
-  filter(varType=="PWP")
 
-test_org <- as.data.frame(out_list[["PWP"]])

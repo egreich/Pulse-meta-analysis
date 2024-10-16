@@ -7,11 +7,23 @@
 Pulse-meta-analysis.Rproj
 
 # Suppress folders
-data_clean/*.csv
+# data_clean/*.csv # commenting out for final upload
 data_clean/tables/*.csv
-data_raw/
+# data_raw/ # commenting out for final version
+data_raw/Combined_PrecipitationPulseExperiment.xlsx
+data_raw/Combined_pulse-plot_info_composites.csv
+data_raw/Combined_pulse-plot_info_duplicates.csv
+data_raw/Combined_record_info_composites.csv
+data_raw/Combined_record_info_duplicates.csv
+data_raw/Combined_study-source_info_composites.csv
+data_raw/Combined_study-source_info_duplicates.csv
+data_raw/aridity_index.tif.aux.xml
+data_raw/aridity_index.tif
+data_raw/aridity_index_df.csv
+data_raw/pet.nc
+data_raw/ppt.nc
+
 plots/
-models/plots/
 !data_clean/worldclim_vars.csv
 
 # Suppress data files and rsconnect folder in pulse_app
@@ -23,14 +35,20 @@ extractions/
 wc10/
 
 # Suppress model codas and convergence files
-models/01-test-Ricker/coda
 models/01-Ricker-simple/coda
 models/01-Ricker-simple/convergence
 models/02-Linear-simple/coda
 models/02-Linear-simple/convergence
-models/03-Selection-simple/coda
-models/03-Selection-simple/convergence
-models/04-Mixture-simple/coda
-models/04-Mixture-simple/convergence
-models/04-Mixture-simple/convergence_fixed_w
+models/03-Mixture-simple/coda
+models/03-Mixture-simple/convergence
+models/03-Mixture-simple/convergence_fixed_w
+
+# Suppress old versions and notes to ourselves
+models/test-Ricker/
+models/plots/
+models/01-plot-responses.R
+models/0x-Selection-simple/
+models/Alternative pulse response models v1.pdf
+pulse_app/
+scripts/00_check_duplicates.R
 
